@@ -1,0 +1,1998 @@
+<!DOCTYPE html>
+<html lang="id" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RT 04 / RW 12 Perum Taman Buah Sukamantri</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        nature: {
+                            50: '#f2fcf5',
+                            100: '#e1f7e7',
+                            500: '#22c55e',
+                            600: '#16a34a',
+                            700: '#15803d',
+                            800: '#166534',
+                            900: '#14532d',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <!-- Alpine.js -->
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Chart.js DataLabels Plugin -->
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
+
+    <!-- QRCode.js -->
+    <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+
+    <!-- Font Inter & FontAwesome -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        @media print {
+            body * { visibility: hidden; }
+            #printable-area, #printable-area *, #printable-letter, #printable-letter *, #printable-card, #printable-card *, #printable-kk, #printable-kk * { visibility: visible; }
+            #printable-area, #printable-card { position: absolute; left: 0; top: 0; width: 100%; border: none !important; box-shadow: none !important; background: white !important; }
+            #printable-letter { position: absolute; left: 0; top: 0; width: 210mm; height: 297mm; max-height: 297mm !important; overflow: hidden !important; border: none !important; box-shadow: none !important; background: white !important; padding: 15mm !important; margin: 0 !important; font-size: 11pt !important; page-break-after: always; }
+            #printable-kk { position: absolute; left: 0; top: 0; width: 100%; height: 100vh; max-height: 100vh !important; overflow: hidden !important; border: none !important; box-shadow: none !important; background: white !important; page-break-inside: avoid; transform: scale(1); transform-origin: top left; padding: 10mm !important; }
+            .no-print { display: none !important; }
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 antialiased min-h-screen flex flex-col" x-data="rtApp()">
+
+    <!-- WELCOME / INITIAL LOGIN GATE -->
+    <template x-if="!isLoggedIn">
+        <div class="fixed inset-0 z-50 bg-nature-900 flex items-center justify-center p-4">
+            <div class="absolute inset-0 opacity-25 bg-cover bg-center" :style="'background-image: url(' + settings.welcomeBgImg + ')'"></div>
+            <div class="relative z-10 bg-white w-full max-w-md rounded-3xl p-8 shadow-2xl space-y-6">
+                <div class="text-center space-y-2">
+                    <div class="w-16 h-16 bg-nature-700 text-white rounded-2xl mx-auto flex items-center justify-center text-2xl shadow-lg shadow-nature-600/30 overflow-hidden">
+                        <template x-if="settings.customLogoUrl">
+                            <img :src="settings.customLogoUrl" alt="Logo RT" class="w-full h-full object-cover">
+                        </template>
+                        <template x-if="!settings.customLogoUrl">
+                            <i :class="settings.logoIcon"></i>
+                        </template>
+                    </div>
+                    <div class="space-y-1">
+                        <h2 class="text-xl font-extrabold text-slate-900 leading-snug tracking-tight" x-text="settings.appName"></h2>
+                        <p class="text-xs font-bold text-nature-700 uppercase tracking-wider" x-text="settings.appSubName"></p>
+                        <p class="text-[11px] text-slate-500 font-medium" x-text="settings.appLocation"></p>
+                    </div>
+                    <p class="text-xs text-slate-500 pt-1">Silakan login dengan username & password Anda untuk mengakses portal warga digital.</p>
+                </div>
+
+                <div class="flex justify-center gap-2 border-b border-slate-100 pb-4">
+                    <button @click="loginRole = 'pengurus'" class="flex-1 py-2 px-3 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2" :class="loginRole === 'pengurus' ? 'bg-nature-700 text-white shadow' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'">
+                        <i class="fa-solid fa-user-tie"></i> Pengurus RT
+                    </button>
+                    <button @click="loginRole = 'warga'" class="flex-1 py-2 px-3 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2" :class="loginRole === 'warga' ? 'bg-blue-600 text-white shadow' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'">
+                        <i class="fa-solid fa-user"></i> Warga
+                    </button>
+                </div>
+
+                <form @submit.prevent="submitInitialLogin" class="space-y-4 text-xs">
+                    <div>
+                        <label class="block font-semibold uppercase text-slate-600 mb-1">Username</label>
+                        <input type="text" x-model="loginUsername" required placeholder="Masukkan username..." class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-nature-600 text-sm">
+                    </div>
+                    <div>
+                        <label class="block font-semibold uppercase text-slate-600 mb-1">Password</label>
+                        <input type="password" x-model="loginPassword" required placeholder="Masukkan password..." class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-nature-600 text-sm">
+                    </div>
+
+                    <button type="submit" class="w-full bg-nature-700 hover:bg-nature-800 text-white font-semibold py-3.5 rounded-xl text-sm shadow-md transition flex items-center justify-center gap-2 mt-2">
+                        <i class="fa-solid fa-right-to-bracket"></i> Masuk ke Dashboard
+                    </button>
+                </form>
+            </div>
+        </div>
+    </template>
+
+    <!-- MAIN APP WRAPPER (Shown after login) -->
+    <template x-if="isLoggedIn">
+        <div class="min-h-screen flex flex-col">
+            <!-- Marquee Hotline Banner -->
+            <div class="bg-nature-900 text-nature-100 text-xs py-2 px-4 shadow-inner">
+                <div class="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-2 overflow-hidden">
+                    <div class="flex items-center gap-2 w-full sm:w-auto">
+                        <span class="bg-nature-600 text-white px-2 py-0.5 rounded-full font-semibold animate-pulse shrink-0">SIAGA RT</span>
+                        <div class="overflow-hidden whitespace-nowrap w-full sm:w-[550px]">
+                            <div class="inline-block animate-[marquee_20s_linear_infinite]">
+                                Hotline Keamanan & Ambulans: <strong x-text="kontakInfo.hotline"></strong> (Idrus Sadi) &bull; Darurat Hubungi Pengurus RT 04 Siap 24 Jam &bull; Layanan Cepat Tanggap Warga Perum Taman Buah Sukamantri
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-4 text-nature-200 shrink-0">
+                        <span><i class="fa-solid fa-location-dot mr-1"></i> <span x-text="kontakInfo.lokasiDetail"></span></span>
+                        <span><i class="fa-solid fa-calendar-days mr-1"></i> <span x-text="currentDate"></span></span>
+                    </div>
+                </div>
+            </div>
+
+            <header class="bg-white sticky top-0 z-40 shadow-sm border-b border-slate-100">
+                <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex flex-col gap-4">
+                    <div class="flex items-center justify-between">
+                        <!-- Logo & Title -->
+                        <div class="flex items-center gap-3 cursor-pointer" @click="changeTab('dashboard')">
+                            <div class="w-12 h-12 bg-nature-700 text-white rounded-2xl flex items-center justify-center shadow-lg shadow-nature-600/30 text-xl overflow-hidden">
+                                <template x-if="settings.customLogoUrl">
+                                    <img :src="settings.customLogoUrl" alt="Logo RT" class="w-full h-full object-cover">
+                                </template>
+                                <template x-if="!settings.customLogoUrl">
+                                    <i :class="settings.logoIcon"></i>
+                                </template>
+                            </div>
+                            <div>
+                                <h1 class="font-bold text-base sm:text-lg text-slate-900 tracking-tight leading-snug" x-text="settings.appName"></h1>
+                                <p class="text-xs text-nature-700 font-medium" x-text="settings.appSubName"></p>
+                            </div>
+                        </div>
+
+                        <!-- Auth Profile / Login Button -->
+                        <div class="flex items-center gap-3">
+                            <template x-if="currentUser">
+                                <div class="flex items-center gap-3 bg-slate-100 px-3 py-1.5 rounded-2xl">
+                                    <div class="w-9 h-9 rounded-xl bg-nature-700 text-white flex items-center justify-center font-bold text-sm">
+                                        <i :class="currentUser.role === 'pengurus' ? 'fa-solid fa-user-tie' : 'fa-solid fa-user'"></i>
+                                    </div>
+                                    <div class="hidden sm:block text-left text-xs">
+                                        <p class="font-bold text-slate-900" x-text="currentUser.nama"></p>
+                                        <span class="px-2 py-0.5 rounded-full text-[10px] font-semibold" :class="currentUser.role === 'pengurus' ? 'bg-emerald-100 text-nature-800' : 'bg-blue-100 text-blue-800'" x-text="currentUser.role === 'pengurus' ? 'Pengurus RT' : 'Warga'"></span>
+                                    </div>
+                                    <button @click="logout()" class="text-slate-400 hover:text-rose-600 p-1.5 rounded-lg transition" title="Keluar">
+                                        <i class="fa-solid fa-right-from-bracket"></i>
+                                    </button>
+                                </div>
+                            </template>
+                            <template x-if="!currentUser">
+                                <button @click="openLoginModal()" class="bg-nature-700 hover:bg-nature-800 text-white px-4 py-2.5 rounded-2xl font-semibold text-xs shadow-md transition flex items-center gap-2">
+                                    <i class="fa-solid fa-right-to-bracket"></i> Login
+                                </button>
+                            </template>
+
+                            <!-- Mobile Menu Toggle -->
+                            <button @click="mobileMenuOpen = !mobileMenuOpen" class="lg:hidden p-2.5 rounded-xl bg-slate-100 text-slate-700 hover:bg-slate-200">
+                                <i class="fa-solid fa-bars text-lg"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Navigation Menu -->
+                    <nav class="hidden lg:flex items-center gap-1.5 bg-slate-100 p-1.5 rounded-2xl w-fit">
+                        <template x-for="tab in tabs" :key="tab.id">
+                            <button @click="changeTab(tab.id)"
+                                :class="activeTab === tab.id ? 'bg-nature-700 text-white shadow-md' : 'text-slate-600 hover:text-nature-700'"
+                                class="px-3.5 py-2 rounded-xl text-xs font-semibold transition-all flex items-center gap-2">
+                                <i :class="tab.icon"></i>
+                                <span x-text="tab.name"></span>
+                            </button>
+                        </template>
+                    </nav>
+                </div>
+
+                <!-- Mobile Drawer -->
+                <div x-show="mobileMenuOpen" @click.away="mobileMenuOpen = false" class="lg:hidden bg-white border-b border-slate-200 px-4 pt-2 pb-4 space-y-1">
+                    <template x-for="tab in tabs" :key="tab.id">
+                        <button @click="changeTab(tab.id); mobileMenuOpen = false;"
+                            :class="activeTab === tab.id ? 'bg-nature-50 text-nature-700 font-bold' : 'text-slate-700'"
+                            class="w-full text-left px-4 py-2.5 rounded-xl text-sm font-semibold flex items-center gap-3">
+                            <i :class="tab.icon + ' w-5 text-nature-600'"></i>
+                            <span x-text="tab.name"></span>
+                        </button>
+                    </template>
+                </div>
+            </header>
+
+            <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+
+                <!-- ==================== DASHBOARD TAB ==================== -->
+                <div x-show="activeTab === 'dashboard'" class="space-y-8">
+                    <div class="relative rounded-3xl bg-gradient-to-r from-nature-800 via-nature-700 to-emerald-600 text-white p-8 sm:p-12 overflow-hidden shadow-xl shadow-nature-900/10 h-64 flex items-center justify-center text-center">
+                        <div class="absolute inset-0 opacity-40 bg-cover bg-center" :style="'background-image: url(' + settings.menuBanners.dashboard + ')'"></div>
+                        <div class="relative z-10 space-y-2 flex flex-col items-center justify-center text-center">
+                            <span class="bg-white/20 text-white px-3.5 py-1 rounded-full text-xs font-bold uppercase tracking-wider inline-block">Dashboard Utama</span>
+                            <h2 class="text-2xl sm:text-3xl font-extrabold tracking-tight">Selamat Datang di Portal Warga RT 04</h2>
+                            <p class="text-xs sm:text-sm text-nature-100 max-w-xl mx-auto">Pusat informasi, kependudukan, administrasi surat, dan transparansi keuangan warga Perum Taman Buah Sukamantri.</p>
+                        </div>
+                    </div>
+
+                    <!-- Stats Grid -->
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">
+                        <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 flex items-center gap-4">
+                            <div class="w-14 h-14 rounded-2xl bg-emerald-100 text-nature-700 flex items-center justify-center text-2xl font-bold"><i class="fa-solid fa-house-chimney"></i></div>
+                            <div>
+                                <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Jumlah KK</p>
+                                <h4 class="text-2xl font-extrabold text-slate-900 mt-1" x-text="stats.kk"></h4>
+                                <span class="text-[10px] text-nature-700 font-semibold bg-nature-50 px-2 py-0.5 rounded-full">Kepala Keluarga</span>
+                            </div>
+                        </div>
+                        <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 flex items-center gap-4">
+                            <div class="w-14 h-14 rounded-2xl bg-blue-100 text-blue-700 flex items-center justify-center text-2xl font-bold"><i class="fa-solid fa-users"></i></div>
+                            <div>
+                                <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Total Warga</p>
+                                <h4 class="text-2xl font-extrabold text-slate-900 mt-1" x-text="stats.total"></h4>
+                                <span class="text-[10px] text-blue-700 font-semibold bg-blue-50 px-2 py-0.5 rounded-full">Jiwa Terdaftar</span>
+                            </div>
+                        </div>
+                        <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 flex items-center gap-4">
+                            <div class="w-14 h-14 rounded-2xl bg-indigo-100 text-indigo-700 flex items-center justify-center text-2xl font-bold"><i class="fa-solid fa-mars"></i></div>
+                            <div>
+                                <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Laki-Laki</p>
+                                <h4 class="text-2xl font-extrabold text-slate-900 mt-1" x-text="stats.laki"></h4>
+                                <span class="text-[10px] text-indigo-700 font-semibold bg-indigo-50 px-2 py-0.5 rounded-full">Jiwa</span>
+                            </div>
+                        </div>
+                        <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 flex items-center gap-4">
+                            <div class="w-14 h-14 rounded-2xl bg-pink-100 text-pink-700 flex items-center justify-center text-2xl font-bold"><i class="fa-solid fa-venus"></i></div>
+                            <div>
+                                <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Perempuan</p>
+                                <h4 class="text-2xl font-extrabold text-slate-900 mt-1" x-text="stats.perempuan"></h4>
+                                <span class="text-[10px] text-pink-700 font-semibold bg-pink-50 px-2 py-0.5 rounded-full">Jiwa</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Charts Section -->
+                    <div class="bg-white rounded-3xl p-6 sm:p-8 shadow-sm border border-slate-100 space-y-6">
+                        <div class="border-b border-slate-100 pb-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+                            <div>
+                                <h3 class="text-xl font-bold text-slate-900">Statistik & Demografi Warga RT 04 / RW 12</h3>
+                                <p class="text-sm text-slate-500 mt-0.5">Tersinkronisasi otomatis secara real-time dengan database Data Warga (Angka & Persentase)</p>
+                            </div>
+                            <span class="bg-emerald-50 text-nature-700 text-xs font-semibold px-3 py-1 rounded-full"><i class="fa-solid fa-rotate mr-1"></i> Live Sync Active</span>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 pt-4">
+                            <div class="bg-slate-50 p-5 rounded-2xl border border-slate-200/60 flex flex-col justify-between">
+                                <div><h4 class="font-bold text-slate-800 text-sm mb-1"><i class="fa-solid fa-people-arrows text-nature-600 mr-2"></i> Statistik Kelompok Usia</h4><p class="text-xs text-slate-500 mb-4">Distribusi usia warga (Balita s/d Lansia)</p></div>
+                                <div class="w-full h-64 flex items-center justify-center"><canvas id="chartUsiaGroup"></canvas></div>
+                            </div>
+                            <div class="bg-slate-50 p-5 rounded-2xl border border-slate-200/60 flex flex-col justify-between">
+                                <div><h4 class="font-bold text-slate-800 text-sm mb-1"><i class="fa-solid fa-graduation-cap text-nature-600 mr-2"></i> Statistik Pendidikan</h4><p class="text-xs text-slate-500 mb-4">Tingkat pendidikan terakhir warga</p></div>
+                                <div class="w-full h-64 flex items-center justify-center"><canvas id="chartPendidikan"></canvas></div>
+                            </div>
+                            <div class="bg-slate-50 p-5 rounded-2xl border border-slate-200/60 flex flex-col justify-between">
+                                <div><h4 class="font-bold text-slate-800 text-sm mb-1"><i class="fa-solid fa-briefcase text-nature-600 mr-2"></i> Statistik Pekerjaan</h4><p class="text-xs text-slate-500 mb-4">Mata pencaharian warga RT 04</p></div>
+                                <div class="w-full h-64 flex items-center justify-center"><canvas id="chartPekerjaan"></canvas></div>
+                            </div>
+                            <div class="bg-slate-50 p-5 rounded-2xl border border-slate-200/60 flex flex-col justify-between">
+                                <div><h4 class="font-bold text-slate-800 text-sm mb-1"><i class="fa-solid fa-house-user text-nature-600 mr-2"></i> Status Tempat Tinggal</h4><p class="text-xs text-slate-500 mb-4">Domisili & status kependudukan</p></div>
+                                <div class="w-full h-64 flex items-center justify-center"><canvas id="chartStatusTinggal"></canvas></div>
+                            </div>
+                            <div class="bg-slate-50 p-5 rounded-2xl border border-slate-200/60 flex flex-col justify-between">
+                                <div><h4 class="font-bold text-slate-800 text-sm mb-1"><i class="fa-solid fa-place-of-worship text-nature-600 mr-2"></i> Statistik Agama</h4><p class="text-xs text-slate-500 mb-4">Kepercayaan / agama warga</p></div>
+                                <div class="w-full h-64 flex items-center justify-center"><canvas id="chartAgama"></canvas></div>
+                            </div>
+                            <div class="bg-slate-50 p-5 rounded-2xl border border-slate-200/60 flex flex-col justify-between">
+                                <div><h4 class="font-bold text-slate-800 text-sm mb-1"><i class="fa-solid fa-car text-nature-600 mr-2"></i> Kepemilikan Kendaraan</h4><p class="text-xs text-slate-500 mb-4">Jumlah motor & mobil per KK</p></div>
+                                <div class="w-full h-64 flex items-center justify-center"><canvas id="chartKendaraan"></canvas></div>
+                            </div>
+                            <div class="bg-slate-50 p-5 rounded-2xl border border-slate-200/60 flex flex-col justify-between">
+                                <div><h4 class="font-bold text-slate-800 text-sm mb-1"><i class="fa-solid fa-bolt text-nature-600 mr-2"></i> Voltase Listrik Rumah</h4><p class="text-xs text-slate-500 mb-4">Daya listrik PLN terpasang</p></div>
+                                <div class="w-full h-64 flex items-center justify-center"><canvas id="chartListrik"></canvas></div>
+                            </div>
+                            <div class="bg-slate-50 p-5 rounded-2xl border border-slate-200/60 flex flex-col justify-between">
+                                <div><h4 class="font-bold text-slate-800 text-sm mb-1"><i class="fa-solid fa-wifi text-nature-600 mr-2"></i> Penggunaan Internet</h4><p class="text-xs text-slate-500 mb-4">Provider internet warga</p></div>
+                                <div class="w-full h-64 flex items-center justify-center"><canvas id="chartInternet"></canvas></div>
+                            </div>
+                            <div class="bg-slate-50 p-5 rounded-2xl border border-slate-200/60 lg:col-span-1 flex flex-col justify-between">
+                                <div><h4 class="font-bold text-slate-800 text-sm mb-1"><i class="fa-solid fa-droplet text-nature-600 mr-2"></i> Sumber Air Rumah Tangga</h4><p class="text-xs text-slate-500 mb-4">PAM, sumur bor, atau air bersih</p></div>
+                                <div class="w-full h-64 flex items-center justify-center"><canvas id="chartAir"></canvas></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ==================== DATA WARGA TAB ==================== -->
+                <div x-show="activeTab === 'warga'" class="space-y-6">
+                    <div class="relative rounded-3xl overflow-hidden h-40 bg-nature-900 text-white p-6 flex items-center justify-center text-center">
+                        <div class="absolute inset-0 opacity-30 bg-cover bg-center" :style="'background-image: url(' + settings.menuBanners.warga + ')'"></div>
+                        <div class="relative z-10 space-y-1 flex flex-col items-center justify-center text-center">
+                            <span class="bg-white/20 text-white px-3 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider inline-block">Database Kependudukan</span>
+                            <h2 class="text-xl sm:text-2xl font-extrabold mt-1">Data Warga & Kartu Keluarga</h2>
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-3xl p-6 sm:p-8 shadow-sm border border-slate-100 space-y-6">
+                        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                            <div class="flex items-center gap-2 bg-slate-100 p-1.5 rounded-2xl">
+                                <button @click="wargaSubTab = 'tabel'" :class="wargaSubTab === 'tabel' ? 'bg-nature-700 text-white shadow' : 'text-slate-600 hover:text-nature-700'" class="px-4 py-2 rounded-xl text-xs font-semibold transition">Daftar Warga</button>
+                                <button @click="wargaSubTab = 'kk'" :class="wargaSubTab === 'kk' ? 'bg-nature-700 text-white shadow' : 'text-slate-600 hover:text-nature-700'" class="px-4 py-2 rounded-xl text-xs font-semibold transition">Daftar KK</button>
+                            </div>
+                            <div>
+                                <template x-if="canManageData()">
+                                    <button @click="openAddResidentModal()" class="bg-nature-700 hover:bg-nature-800 text-white px-5 py-3 rounded-2xl font-semibold text-sm shadow-md transition flex items-center gap-2">
+                                        <i class="fa-solid fa-user-plus"></i> Tambah Warga Baru
+                                    </button>
+                                </template>
+                                <template x-if="!canManageData()">
+                                    <div class="bg-amber-50 text-amber-800 text-xs font-semibold px-4 py-2.5 rounded-2xl border border-amber-200 flex items-center gap-2">
+                                        <i class="fa-solid fa-lock"></i> Mode Warga (Read-Only)
+                                    </div>
+                                </template>
+                            </div>
+                        </div>
+
+                        <!-- TABEL WARGA -->
+                        <div x-show="wargaSubTab === 'tabel'" class="space-y-4">
+                            <div class="flex flex-col sm:flex-row gap-3 items-center justify-between">
+                                <div class="relative w-full sm:w-80">
+                                    <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400"><i class="fa-solid fa-magnifying-glass"></i></span>
+                                    <input type="text" x-model="searchResident" placeholder="Cari nama, NIK, atau rumah..." class="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-2xl text-sm focus:outline-none focus:border-nature-600 transition">
+                                </div>
+                                <select x-model="filterResidentStatus" class="w-full sm:w-auto px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-medium text-slate-700 focus:outline-none focus:border-nature-600 transition">
+                                    <option value="ALL">Semua Status Warga</option>
+                                    <option value="Tetap">Warga Tetap</option>
+                                    <option value="Kontrak">Warga Kontrak</option>
+                                    <option value="Meninggal">Meninggal</option>
+                                    <option value="Cerai">Cerai</option>
+                                </select>
+                            </div>
+
+                            <div class="overflow-x-auto rounded-2xl border border-slate-100">
+                                <table class="w-full text-left border-collapse">
+                                    <thead>
+                                        <tr class="bg-slate-50 text-slate-600 text-xs font-bold uppercase tracking-wider border-b border-slate-100">
+                                            <th class="p-4">NIK & Nama Lengkap</th>
+                                            <th class="p-4">No. Rumah</th>
+                                            <th class="p-4">Status Hubungan</th>
+                                            <th class="p-4">L/P & Agama</th>
+                                            <th class="p-4">Pekerjaan</th>
+                                            <th class="p-4">Status</th>
+                                            <th class="p-4 text-right">Aksi</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-slate-100 text-sm">
+                                        <template x-for="r in filteredResidents" :key="r.id">
+                                            <tr class="hover:bg-slate-50/80 transition">
+                                                <td class="p-4"><p class="font-bold text-slate-900" x-text="r.nama"></p><p class="text-xs text-slate-500 font-mono" x-text="'NIK: ' + r.nik"></p></td>
+                                                <td class="p-4 text-slate-700 font-medium" x-text="r.rumah"></td>
+                                                <td class="p-4"><span class="px-2.5 py-1 rounded-full text-xs font-semibold" :class="r.hub === 'Kepala Keluarga' ? 'bg-emerald-100 text-nature-800' : 'bg-slate-100 text-slate-700'" x-text="r.hub || 'Kepala Keluarga'"></span></td>
+                                                <td class="p-4"><span x-text="r.gender" class="font-semibold text-xs"></span><p class="text-xs text-slate-500" x-text="r.agama"></p></td>
+                                                <td class="p-4 text-slate-600" x-text="r.pekerjaan"></td>
+                                                <td class="p-4"><span :class="getStatusBadgeClass(r.status)" class="font-semibold text-xs px-3 py-1 rounded-full" x-text="r.status"></span></td>
+                                                <td class="p-4 text-right space-x-1">
+                                                    <button @click="viewResident(r)" class="text-slate-500 hover:text-blue-600 p-2 rounded-xl hover:bg-blue-50 transition" title="Lihat Detail"><i class="fa-solid fa-eye"></i></button>
+                                                    <button @click="viewKK(r)" class="text-slate-500 hover:text-indigo-600 p-2 rounded-xl hover:bg-indigo-50 transition" title="Lihat Kartu Keluarga"><i class="fa-solid fa-id-card"></i></button>
+                                                    <template x-if="canManageData()">
+                                                        <button @click="editResident(r)" class="text-slate-500 hover:text-amber-600 p-2 rounded-xl hover:bg-amber-50 transition" title="Edit Data"><i class="fa-solid fa-pen-to-square"></i></button>
+                                                    </template>
+                                                    <template x-if="canManageData()">
+                                                        <button @click="deleteResident(r.id)" class="text-slate-500 hover:text-rose-600 p-2 rounded-xl hover:bg-rose-50 transition" title="Hapus"><i class="fa-solid fa-trash-can"></i></button>
+                                                    </template>
+                                                </td>
+                                            </tr>
+                                        </template>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- DAFTAR KK -->
+                        <div x-show="wargaSubTab === 'kk'" class="space-y-4">
+                            <div class="flex justify-between items-center">
+                                <h4 class="font-bold text-slate-900 text-sm">Daftar Kartu Keluarga & Rumah Perum Taman Buah Sukamantri (Tersinkronisasi)</h4>
+                                <div class="flex gap-2">
+                                    <button @click="printAllKK()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-2 rounded-xl text-xs font-semibold shadow transition flex items-center gap-1.5"><i class="fa-solid fa-print"></i> Cetak Semua KK</button>
+                                    <template x-if="canManageData()">
+                                        <button @click="openAddResidentModal()" class="bg-nature-700 hover:bg-nature-800 text-white px-4 py-2 rounded-xl text-xs font-semibold shadow transition flex items-center gap-1.5"><i class="fa-solid fa-plus"></i> Tambah KK / Warga</button>
+                                    </template>
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <template x-for="house in uniqueHouses" :key="house">
+                                    <div class="bg-slate-50 border border-slate-200 rounded-3xl p-6 space-y-4 shadow-sm">
+                                        <div class="flex justify-between items-center border-b border-slate-200 pb-3">
+                                            <div>
+                                                <h4 class="font-bold text-slate-900 text-base" x-text="'Rumah / Blok: ' + house"></h4>
+                                                <p class="text-xs text-slate-500" x-text="'No. KK: ' + getHouseHead(house).nik"></p>
+                                            </div>
+                                            <div class="flex items-center gap-1.5">
+                                                <button @click="viewKKByHouse(house)" class="bg-nature-700 hover:bg-nature-800 text-white px-3 py-1.5 rounded-xl text-xs font-semibold shadow transition flex items-center gap-1" title="Lihat KK"><i class="fa-solid fa-id-card"></i> Lihat KK</button>
+                                                <template x-if="canManageData()">
+                                                    <div class="flex items-center gap-1 border-l border-slate-200 pl-1.5">
+                                                        <button @click="openAddResidentModal()" class="bg-emerald-50 text-emerald-700 hover:bg-emerald-100 p-2 rounded-xl transition" title="Tambah Anggota KK"><i class="fa-solid fa-plus text-xs"></i></button>
+                                                        <button @click="editResident(getHouseHead(house))" class="bg-amber-50 text-amber-700 hover:bg-amber-100 p-2 rounded-xl transition" title="Edit KK Utama"><i class="fa-solid fa-pen text-xs"></i></button>
+                                                        <button @click="deleteResident(getHouseHead(house).id)" class="bg-rose-50 text-rose-700 hover:bg-rose-100 p-2 rounded-xl transition" title="Hapus KK Utama"><i class="fa-solid fa-trash-can text-xs"></i></button>
+                                                    </div>
+                                                </template>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="grid grid-cols-2 gap-2 text-[11px] bg-white p-3 rounded-xl border border-slate-100">
+                                            <div><span class="text-slate-400">Listrik:</span> <strong class="text-slate-800" x-text="getHouseAttr(house, 'listrik')"></strong></div>
+                                            <div><span class="text-slate-400">Internet:</span> <strong class="text-slate-800" x-text="getHouseAttr(house, 'internet')"></strong></div>
+                                            <div><span class="text-slate-400">Air:</span> <strong class="text-slate-800" x-text="getHouseAttr(house, 'air')"></strong></div>
+                                            <div><span class="text-slate-400">Kendaraan:</span> <strong class="text-slate-800" x-text="getHouseAttr(house, 'kendaraan') + ' (' + getHouseAttr(house, 'platNomor') + ')'"></strong></div>
+                                        </div>
+
+                                        <div class="space-y-2">
+                                            <p class="text-xs font-bold uppercase text-slate-600">Anggota Terdaftar:</p>
+                                            <ul class="text-xs space-y-1.5 pl-2">
+                                                <template x-for="res in getResidentsByHouse(house)" :key="res.id">
+                                                    <li class="flex justify-between items-center bg-white p-2.5 rounded-xl border border-slate-100">
+                                                        <div><span class="font-bold text-slate-900" x-text="res.nama"></span><span class="text-[10px] text-nature-700 font-semibold bg-emerald-50 px-2 py-0.5 rounded ml-2" x-text="res.hub || 'Anggota'"></span></div>
+                                                        <div class="flex items-center gap-2">
+                                                            <span :class="getStatusBadgeClass(res.status)" class="text-[10px] font-semibold px-2 py-0.5 rounded-full" x-text="res.status"></span>
+                                                            <template x-if="canManageData()">
+                                                                <div class="flex items-center gap-1">
+                                                                    <button @click="editResident(res)" class="text-slate-400 hover:text-amber-600 p-1" title="Edit"><i class="fa-solid fa-pen text-[10px]"></i></button>
+                                                                    <button @click="deleteResident(res.id)" class="text-slate-400 hover:text-rose-600 p-1" title="Hapus"><i class="fa-solid fa-trash-can text-[10px]"></i></button>
+                                                                </div>
+                                                            </template>
+                                                        </div>
+                                                    </li>
+                                                </template>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </template>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ==================== SURAT TAB ==================== -->
+                <div x-show="activeTab === 'surat'" class="space-y-8">
+                    <div class="relative rounded-3xl overflow-hidden h-40 bg-nature-900 text-white p-6 flex items-center justify-center text-center">
+                        <div class="absolute inset-0 opacity-30 bg-cover bg-center" :style="'background-image: url(' + settings.menuBanners.surat + ')'"></div>
+                        <div class="relative z-10 space-y-1 flex flex-col items-center justify-center text-center">
+                            <span class="bg-white/20 text-white px-3 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider inline-block">Layanan Administrasi</span>
+                            <h2 class="text-xl sm:text-2xl font-extrabold mt-1">Surat Pengantar & Keterangan RT</h2>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                        <div class="bg-white rounded-3xl p-6 sm:p-8 shadow-sm border border-slate-100 flex flex-col justify-between">
+                            <div>
+                                <div class="flex items-center gap-3 mb-6">
+                                    <div class="w-12 h-12 rounded-2xl bg-emerald-100 text-nature-700 flex items-center justify-center text-xl font-bold"><i class="fa-solid fa-file-pen"></i></div>
+                                    <div><h3 class="text-xl font-bold text-slate-900">Form Pengajuan Surat Pengantar RT</h3><p class="text-xs text-slate-500">Pilih warga terdaftar untuk otomatis isi biodata lengkap & QR validasi</p></div>
+                                </div>
+
+                                <form @submit.prevent="submitSuratForm" class="space-y-4">
+                                    <div>
+                                        <label class="block text-xs font-semibold uppercase text-slate-600 mb-1.5">Pilih Warga Pemohon (Autofill)</label>
+                                        <select x-model="selectedSuratWargaId" @change="autofillSuratForm" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-medium text-slate-700 focus:outline-none focus:border-nature-600">
+                                            <option value="">-- Pilih Nama Warga dari Database --</option>
+                                            <template x-for="r in residents" :key="r.id"><option :value="r.id" x-text="r.nama + ' (' + r.rumah + ')'"></option></template>
+                                        </select>
+                                    </div>
+                                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                        <div><label class="block text-xs font-semibold uppercase text-slate-600 mb-1.5">Nama Lengkap</label><input type="text" x-model="suratForm.nama" required class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-sm focus:outline-none focus:border-nature-600"></div>
+                                        <div><label class="block text-xs font-semibold uppercase text-slate-600 mb-1.5">NIK</label><input type="text" x-model="suratForm.nik" required class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-sm focus:outline-none focus:border-nature-600"></div>
+                                    </div>
+                                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                        <div><label class="block text-xs font-semibold uppercase text-slate-600 mb-1.5">Tempat Lahir</label><input type="text" x-model="suratForm.tempatLahir" required class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-sm focus:outline-none focus:border-nature-600"></div>
+                                        <div><label class="block text-xs font-semibold uppercase text-slate-600 mb-1.5">Tanggal Lahir</label><input type="text" x-model="suratForm.tanggalLahir" required class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-sm focus:outline-none focus:border-nature-600"></div>
+                                    </div>
+                                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                        <div><label class="block text-xs font-semibold uppercase text-slate-600 mb-1.5">Jenis Kelamin</label><input type="text" x-model="suratForm.gender" required class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-sm focus:outline-none focus:border-nature-600"></div>
+                                        <div><label class="block text-xs font-semibold uppercase text-slate-600 mb-1.5">Agama</label><input type="text" x-model="suratForm.agama" required class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-sm focus:outline-none focus:border-nature-600"></div>
+                                        <div><label class="block text-xs font-semibold uppercase text-slate-600 mb-1.5">Usia</label><input type="text" x-model="suratForm.usia" required class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-sm focus:outline-none focus:border-nature-600"></div>
+                                    </div>
+                                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                        <div><label class="block text-xs font-semibold uppercase text-slate-600 mb-1.5">Pekerjaan</label><input type="text" x-model="suratForm.pekerjaan" required class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-sm focus:outline-none focus:border-nature-600"></div>
+                                        <div><label class="block text-xs font-semibold uppercase text-slate-600 mb-1.5">No. Rumah / Alamat</label><input type="text" x-model="suratForm.rumah" required class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-sm focus:outline-none focus:border-nature-600"></div>
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-semibold uppercase text-slate-600 mb-1.5">Jenis Surat</label>
+                                        <select x-model="suratForm.jenis" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-medium text-slate-700 focus:outline-none focus:border-nature-600">
+                                            <option value="Surat Keterangan Domisili">Surat Keterangan Domisili</option>
+                                            <option value="Surat Keterangan Tidak Mampu (SKTM)">SKTM (Tidak Mampu)</option>
+                                            <option value="Surat Pengantar Pembuatan KTP / KK">Pengantar Pembuatan KTP / KK</option>
+                                            <option value="Surat Keterangan Kelahiran">Surat Keterangan Kelahiran</option>
+                                            <option value="Surat Keterangan Kematian">Surat Keterangan Kematian</option>
+                                            <option value="Surat Pengantar SKCK">Surat Pengantar SKCK</option>
+                                            <option value="Surat Keterangan Usaha (SKU)">Surat Keterangan Usaha (SKU)</option>
+                                        </select>
+                                    </div>
+                                    <div><label class="block text-xs font-semibold uppercase text-slate-600 mb-1.5">Keperluan / Keterangan Detail</label><textarea x-model="suratForm.keperluan" rows="3" required placeholder="Jelaskan keperluan..." class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-sm focus:outline-none focus:border-nature-600"></textarea></div>
+
+                                    <button type="submit" class="w-full bg-nature-700 hover:bg-nature-800 text-white font-semibold py-3.5 rounded-2xl shadow-md transition flex items-center justify-center gap-2"><i class="fa-solid fa-print"></i> Generate QR & Cetak Surat Resmi RT (A4)</button>
+                                </form>
+                            </div>
+                        </div>
+
+                        <!-- Preview Surat A4 -->
+                        <div class="bg-white rounded-3xl p-6 sm:p-8 shadow-sm border border-slate-100 flex flex-col justify-between">
+                            <div>
+                                <div class="flex items-center justify-between mb-4">
+                                    <h3 class="font-bold text-slate-900 text-base">Preview Surat Resmi RT 04 (A4)</h3>
+                                    <button @click="printGeneratedLetter" class="bg-slate-100 hover:bg-nature-50 text-nature-700 px-4 py-2 rounded-xl text-xs font-semibold transition flex items-center gap-2"><i class="fa-solid fa-print"></i> Cetak Surat A4</button>
+                                </div>
+                                
+                                <div id="printable-letter" class="bg-white border-2 border-slate-800 p-8 text-slate-900 text-xs sm:text-sm font-serif space-y-6 shadow-inner rounded-xl relative">
+                                    <div class="text-center border-b-4 double border-slate-900 pb-4 space-y-1">
+                                        <h4 class="font-bold uppercase tracking-wider text-xs">RUKUN TETANGGA 04 / RUKUN WARGA 12</h4>
+                                        <h3 class="font-extrabold uppercase text-base tracking-wide">PERUMAHAN TAMAN BUAH SUKAMANTRI</h3>
+                                        <p class="text-[11px] font-sans text-slate-700">Desa Sukamantri, Kecamatan Pasar Kemis, Kabupaten Tangerang, Banten 15560</p>
+                                    </div>
+
+                                    <div class="text-center py-2 space-y-1">
+                                        <h4 class="font-bold uppercase text-sm tracking-wide" x-text="suratForm.jenis"></h4>
+                                        <p class="text-xs font-sans text-slate-700 font-medium" x-text="'Nomor: ' + settings.suratNomorFormat"></p>
+                                    </div>
+
+                                    <div class="font-sans space-y-3 text-xs sm:text-sm leading-relaxed text-justify">
+                                        <p>Yang bertandatangan di bawah ini Pengurus RT 04 / RW 12 Perumahan Taman Buah Sukamantri, Kecamatan Pasar Kemis, Kabupaten Tangerang, dengan ini menerangkan bahwa:</p>
+                                        <table class="w-full pl-4 space-y-1.5 font-sans">
+                                            <tr><td class="w-44 font-semibold py-0.5">Nama Lengkap</td><td>: <span class="font-bold" x-text="suratForm.nama || '..............................................'"></span></td></tr>
+                                            <tr><td class="font-semibold py-0.5">NIK / No. KK</td><td>: <span class="font-mono" x-text="suratForm.nik || '..............................................'"></span></td></tr>
+                                            <tr><td class="font-semibold py-0.5">Tempat/Tanggal Lahir</td><td>: <span x-text="(suratForm.tempatLahir && suratForm.tanggalLahir) ? (suratForm.tempatLahir + ', ' + suratForm.tanggalLahir) : '..............................................'"></span></td></tr>
+                                            <tr><td class="font-semibold py-0.5">Jenis Kelamin</td><td>: <span x-text="suratForm.gender || '..............................................'"></span></td></tr>
+                                            <tr><td class="font-semibold py-0.5">Agama</td><td>: <span x-text="suratForm.agama || '..............................................'"></span></td></tr>
+                                            <tr><td class="font-semibold py-0.5">Pekerjaan</td><td>: <span x-text="suratForm.pekerjaan || '..............................................'"></span></td></tr>
+                                            <tr><td class="font-semibold py-0.5">Usia</td><td>: <span x-text="suratForm.usia ? (suratForm.usia + ' Tahun') : '..............................................'"></span></td></tr>
+                                            <tr><td class="font-semibold py-0.5">Alamat / Rumah</td><td>: <span x-text="suratForm.rumah || '..............................................'"></span> (Perum Taman Buah Sukamantri RT 04/12)</td></tr>
+                                        </table>
+                                        <p class="pt-2">Adalah benar warga domisili aktif RT 04 / RW 12 Desa Sukamantri, Kecamatan Pasar Kemis, Kabupaten Tangerang. Berdasarkan pengamatan dan catatan pengurus RT, yang bersangkutan berkelakuan baik serta aktif dalam kegiatan kemasyarakatan lingkungan.</p>
+                                        <p>Surat keterangan pengantar ini diberikan atas permohonan yang bersangkutan untuk dipergunakan keperluan: <strong x-text="suratForm.keperluan || '......................................................................'"></strong>.</p>
+                                        <p>Demikian surat pengantar ini dibuat dengan sebenarnya, dalam keadaan sadar dan tanpa paksaan dari pihak manapun, untuk dapat dipergunakan sebagaimana mestinya oleh instansi yang berwenang.</p>
+                                    </div>
+
+                                    <div class="pt-6 flex justify-between items-end font-sans text-xs">
+                                        <div class="space-y-2">
+                                            <div class="flex items-center gap-3 bg-slate-50 border border-slate-300 p-2.5 rounded-xl shadow-sm">
+                                                <div id="qrcode-container" class="w-16 h-16 bg-white flex items-center justify-center p-1"></div>
+                                                <div class="text-[10px] space-y-0.5">
+                                                    <p class="font-bold text-slate-900">VALIDASI RESMI RT 04</p>
+                                                    <p class="font-mono text-nature-700 font-semibold" x-text="verificationCode"></p>
+                                                    <p class="text-slate-500">Scan QR untuk verifikasi</p>
+                                                </div>
+                                            </div>
+                                            <div class="text-[11px] text-slate-700 pl-1">Sekretaris RT 04: <span class="font-bold" x-text="pengurusList.find(p=>p.jabatan.includes('Sekretaris'))?.nama || 'Sofyan Hadi Prayitno'"></span></div>
+                                        </div>
+                                        <div class="text-center space-y-12 pr-4">
+                                            <p>Sukamantri, <span x-text="currentDate"></span><br><strong>Ketua RT 04 / RW 12</strong></p>
+                                            <p class="font-bold text-sm" x-text="pengurusList.find(p=>p.jabatan.includes('Ketua RT'))?.nama || 'Idrus Sadi'"></p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ==================== ASPIRASI TAB ==================== -->
+                <div x-show="activeTab === 'aspirasi'" class="space-y-6">
+                    <div class="relative rounded-3xl overflow-hidden h-40 bg-nature-900 text-white p-6 flex items-center justify-center text-center">
+                        <div class="absolute inset-0 opacity-30 bg-cover bg-center" :style="'background-image: url(' + settings.menuBanners.aspirasi + ')'"></div>
+                        <div class="relative z-10 space-y-1 flex flex-col items-center justify-center text-center">
+                            <span class="bg-white/20 text-white px-3 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider inline-block">Suara Warga</span>
+                            <h2 class="text-xl sm:text-2xl font-extrabold mt-1">Aspirasi & Pengaduan Warga RT 04</h2>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                        <div class="bg-white rounded-3xl p-6 sm:p-8 shadow-sm border border-slate-100 flex flex-col justify-between">
+                            <div>
+                                <div class="flex items-center gap-3 mb-6">
+                                    <div class="w-12 h-12 rounded-2xl bg-amber-100 text-amber-700 flex items-center justify-center text-xl font-bold"><i class="fa-solid fa-comments"></i></div>
+                                    <div><h3 class="text-xl font-bold text-slate-900">Form Pengaduan Warga</h3><p class="text-xs text-slate-500">Pilih nama pelapor dari database warga secara otomatis</p></div>
+                                </div>
+
+                                <form @submit.prevent="submitAspirasiForm" class="space-y-4">
+                                    <div>
+                                        <label class="block text-xs font-semibold uppercase text-slate-600 mb-1.5">Pilih Pelapor (Autofill)</label>
+                                        <select x-model="selectedAspirasiWargaId" @change="autofillAspirasiForm" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-medium text-slate-700 focus:outline-none focus:border-nature-600">
+                                            <option value="">-- Pilih Warga Pelapor --</option>
+                                            <template x-for="r in residents" :key="r.id"><option :value="r.id" x-text="r.nama + ' (' + r.rumah + ')'"></option></template>
+                                        </select>
+                                    </div>
+                                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                        <div><label class="block text-xs font-semibold uppercase text-slate-600 mb-1.5">Nama Lengkap Pelapor</label><input type="text" x-model="aspirasiForm.nama" required class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-sm focus:outline-none focus:border-nature-600"></div>
+                                        <div><label class="block text-xs font-semibold uppercase text-slate-600 mb-1.5">No. Rumah / Blok</label><input type="text" x-model="aspirasiForm.rumah" required class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-sm focus:outline-none focus:border-nature-600"></div>
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-semibold uppercase text-slate-600 mb-1.5">Kategori Pengaduan / Aspirasi</label>
+                                        <select x-model="aspirasiForm.kategori" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-medium text-slate-700 focus:outline-none focus:border-nature-600">
+                                            <option value="Keamanan & Ketertiban">Keamanan & Ketertiban</option>
+                                            <option value="Kebersihan & Sampah">Kebersihan & Sampah</option>
+                                            <option value="Infrastruktur & Jalan">Infrastruktur & Fasilitas Umum</option>
+                                            <option value="Saran & Masukan Lain">Saran & Masukan Umum</option>
+                                        </select>
+                                    </div>
+                                    <div><label class="block text-xs font-semibold uppercase text-slate-600 mb-1.5">Isi Pesan / Pengaduan</label><textarea x-model="aspirasiForm.pesan" rows="3" required placeholder="Tuliskan aspirasi..." class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-sm focus:outline-none focus:border-nature-600"></textarea></div>
+
+                                    <button type="submit" class="w-full bg-amber-600 hover:bg-amber-700 text-white font-semibold py-3.5 rounded-2xl shadow-md transition flex items-center justify-center gap-2"><i class="fa-solid fa-bullhorn"></i> Kirim Aspirasi Warga</button>
+                                </form>
+                            </div>
+                        </div>
+
+                        <div class="bg-white rounded-3xl p-6 sm:p-8 shadow-sm border border-slate-100 flex flex-col justify-between">
+                            <div>
+                                <div class="flex justify-between items-center mb-4">
+                                    <h3 class="text-lg font-bold text-slate-900">Daftar Aspirasi & Pengaduan Masuk</h3>
+                                    <button @click="printSection()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-2 rounded-xl text-xs font-semibold transition flex items-center gap-1.5"><i class="fa-solid fa-print"></i> Print</button>
+                                </div>
+                                <div class="space-y-4 max-h-[460px] overflow-y-auto pr-1">
+                                    <template x-for="asp in aspirations" :key="asp.id">
+                                        <div class="p-4 rounded-2xl bg-slate-50 border border-slate-100 flex gap-4 items-center">
+                                            <div class="w-20 h-20 rounded-xl flex items-center justify-center text-3xl shrink-0 shadow-sm" :class="getAspirasiBadgeClass(asp.kategori)">
+                                                <i :class="getAspirasiIcon(asp.kategori)"></i>
+                                            </div>
+                                            <div class="space-y-1.5 flex-grow">
+                                                <div class="flex justify-between items-start">
+                                                    <div>
+                                                        <h4 class="font-bold text-slate-900 text-sm" x-text="asp.nama + ' (' + asp.rumah + ')'"></h4>
+                                                        <span class="text-[10px] bg-slate-200 text-slate-700 font-medium px-2 py-0.5 rounded-md inline-flex items-center gap-1 mt-0.5"><i :class="getAspirasiIcon(asp.kategori)"></i> <span x-text="asp.kategori"></span></span>
+                                                    </div>
+                                                    <span class="text-[10px] font-semibold px-2.5 py-1 rounded-full" :class="asp.status === 'Selesai' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'" x-text="asp.status"></span>
+                                                </div>
+                                                <p class="text-xs text-slate-700" x-text="asp.pesan"></p>
+                                                <div class="text-[10px] text-slate-400 text-right" x-text="asp.tanggal"></div>
+                                            </div>
+                                        </div>
+                                    </template>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ==================== KEUANGAN / KAS RT TAB ==================== -->
+                <div x-show="activeTab === 'keuangan'" class="space-y-6">
+                    <div class="relative rounded-3xl overflow-hidden h-40 bg-nature-900 text-white p-6 flex items-center justify-center text-center">
+                        <div class="absolute inset-0 opacity-30 bg-cover bg-center" :style="'background-image: url(' + settings.menuBanners.keuangan + ')'"></div>
+                        <div class="relative z-10 space-y-1 flex flex-col items-center justify-center text-center">
+                            <span class="bg-white/20 text-white px-3 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider inline-block">Keuangan Transparan</span>
+                            <h2 class="text-xl sm:text-2xl font-extrabold mt-1">Kas RT & Laporan Keuangan</h2>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div class="bg-gradient-to-br from-nature-800 to-nature-900 text-white rounded-3xl p-6 sm:p-8 shadow-lg shadow-nature-900/15 flex flex-col justify-between">
+                            <div>
+                                <div class="flex justify-between items-center mb-4"><span class="text-xs uppercase tracking-wider bg-white/20 px-3 py-1 rounded-full font-medium">Saldo Kas RT</span><i class="fa-solid fa-wallet text-2xl text-nature-300"></i></div>
+                                <h3 class="text-3xl sm:text-4xl font-extrabold" x-text="formatIDR(totalKasBalance)"></h3>
+                            </div>
+                            <div class="mt-6 pt-4 border-t border-white/10 flex justify-between items-center text-xs text-nature-200">
+                                <span>Kwitansi Format: <strong x-text="settings.kwitansiFormat"></strong></span>
+                                <span class="text-emerald-300 font-semibold"><i class="fa-solid fa-arrow-trend-up"></i> Audit OK</span>
+                            </div>
+                        </div>
+                        <div class="bg-white rounded-3xl p-6 sm:p-8 shadow-sm border border-slate-100 flex flex-col justify-between">
+                            <div>
+                                <div class="flex justify-between items-center mb-4"><span class="text-xs uppercase tracking-wider bg-emerald-50 text-nature-700 px-3 py-1 rounded-full font-bold">Total Pemasukan</span><div class="w-10 h-10 rounded-xl bg-emerald-100 text-nature-700 flex items-center justify-center"><i class="fa-solid fa-arrow-down"></i></div></div>
+                                <h3 class="text-3xl sm:text-4xl font-extrabold text-slate-900" x-text="formatIDR(totalKasIncome)"></h3>
+                            </div>
+                            <div class="mt-6 pt-4 border-t border-slate-100 text-xs text-slate-500">Iuran Warga & Sumbangan Bulan Ini</div>
+                        </div>
+                        <div class="bg-white rounded-3xl p-6 sm:p-8 shadow-sm border border-slate-100 flex flex-col justify-between">
+                            <div>
+                                <div class="flex justify-between items-center mb-4"><span class="text-xs uppercase tracking-wider bg-rose-50 text-rose-700 px-3 py-1 rounded-full font-bold">Total Pengeluaran</span><div class="w-10 h-10 rounded-xl bg-rose-100 text-rose-700 flex items-center justify-center"><i class="fa-solid fa-arrow-up"></i></div></div>
+                                <h3 class="text-3xl sm:text-4xl font-extrabold text-slate-900" x-text="formatIDR(totalKasExpense)"></h3>
+                            </div>
+                            <div class="mt-6 pt-4 border-t border-slate-100 text-xs text-slate-500">Kebersihan, Perbaikan & Operasional</div>
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-3xl p-6 sm:p-8 shadow-sm border border-slate-100 space-y-6">
+                        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                            <div><h3 class="text-xl font-bold text-slate-900">Riwayat Transaksi Kas RT</h3><p class="text-sm text-slate-500 mt-0.5">Catatan transparan pemasukan dan pengeluaran warga</p></div>
+                            <div class="flex gap-2">
+                                <button @click="printSection()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-3 rounded-2xl font-semibold text-sm transition flex items-center gap-2"><i class="fa-solid fa-print"></i> Print Kas</button>
+                                <template x-if="canManageData()">
+                                    <button @click="openAddTransactionModal()" class="bg-nature-700 hover:bg-nature-800 text-white px-5 py-3 rounded-2xl font-semibold text-sm shadow-md transition flex items-center gap-2"><i class="fa-solid fa-circle-plus"></i> Catat Transaksi Baru</button>
+                                </template>
+                            </div>
+                        </div>
+
+                        <div class="overflow-x-auto rounded-2xl border border-slate-100">
+                            <table class="w-full text-left border-collapse">
+                                <thead>
+                                    <tr class="bg-slate-50 text-slate-600 text-xs font-bold uppercase tracking-wider border-b border-slate-100">
+                                        <th class="p-4">Tanggal</th>
+                                        <th class="p-4">Keterangan</th>
+                                        <th class="p-4">Kategori</th>
+                                        <th class="p-4">Jenis</th>
+                                        <th class="p-4 text-right">Nominal</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-slate-100 text-sm">
+                                    <template x-for="t in transactions" :key="t.id">
+                                        <tr class="hover:bg-slate-50/80 transition">
+                                            <td class="p-4 text-slate-500 text-xs" x-text="t.tanggal"></td>
+                                            <td class="p-4 font-medium text-slate-900" x-text="t.ket"></td>
+                                            <td class="p-4"><span class="bg-slate-100 text-slate-600 px-2.5 py-1 rounded-lg text-xs font-medium" x-text="t.kategori"></span></td>
+                                            <td class="p-4 text-xs font-semibold text-slate-600" x-text="t.jenis"></td>
+                                            <td class="p-4 text-right font-bold" :class="t.jenis === 'Pemasukan' ? 'text-nature-600' : 'text-rose-600'" x-text="(t.jenis === 'Pemasukan' ? '+ ' : '- ') + formatIDR(t.nominal)"></td>
+                                        </tr>
+                                    </template>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ==================== AGENDA TAB ==================== -->
+                <div x-show="activeTab === 'agenda'" class="space-y-6">
+                    <div class="relative rounded-3xl overflow-hidden h-40 bg-nature-900 text-white p-6 flex items-center justify-center text-center">
+                        <div class="absolute inset-0 opacity-30 bg-cover bg-center" :style="'background-image: url(' + settings.menuBanners.agenda + ')'"></div>
+                        <div class="relative z-10 space-y-1 flex flex-col items-center justify-center text-center">
+                            <span class="bg-white/20 text-white px-3 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider inline-block">Jadwal Warga</span>
+                            <h2 class="text-xl sm:text-2xl font-extrabold mt-1">Agenda & Kegiatan RT 04</h2>
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-3xl p-6 sm:p-8 shadow-sm border border-slate-100 space-y-6">
+                        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                            <div><h3 class="text-xl font-bold text-slate-900">Agenda & Kegiatan Warga RT 04</h3><p class="text-sm text-slate-500 mt-0.5">Jadwal kegiatan rutin, gotong royong, pos ronda, dan rapat warga</p></div>
+                            <div class="flex gap-2">
+                                <button @click="printSection()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-3 rounded-2xl font-semibold text-sm transition flex items-center gap-2"><i class="fa-solid fa-print"></i> Print Agenda</button>
+                                <template x-if="canManageData()">
+                                    <button @click="openAddAgendaModal()" class="bg-nature-700 hover:bg-nature-800 text-white px-5 py-3 rounded-2xl font-semibold text-sm shadow-md transition flex items-center gap-2"><i class="fa-solid fa-calendar-plus"></i> Tambah Agenda Baru</button>
+                                </template>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            <template x-for="a in agendas" :key="a.id">
+                                <div class="rounded-3xl p-6 border flex flex-col justify-between space-y-4 shadow-sm transition" :class="getAgendaCardClass(a.status)">
+                                    <div>
+                                        <div class="flex justify-between items-center mb-3">
+                                            <span class="text-xs font-bold px-3 py-1 rounded-full" :class="getAgendaBadgeClass(a.status)" x-text="a.status"></span>
+                                            <i class="fa-solid fa-calendar-days text-lg" :class="getAgendaIconClass(a.status)"></i>
+                                        </div>
+                                        <h4 class="font-bold text-slate-900 text-base mb-2" x-text="a.judul"></h4>
+                                        <p class="text-xs text-slate-600 flex items-center gap-2 mb-1"><i class="fa-regular fa-clock w-4"></i> <span x-text="a.tanggal + ' (' + a.waktu + ')'"></span></p>
+                                        <p class="text-xs text-slate-600 flex items-center gap-2"><i class="fa-solid fa-location-dot w-4"></i> <span x-text="a.lokasi"></span></p>
+                                    </div>
+                                    <button @click="showToast('Pengingat agenda berhasil diaktifkan!')" class="w-full bg-white border border-slate-200 hover:bg-nature-50 text-slate-700 hover:text-nature-700 py-2.5 rounded-2xl text-xs font-semibold transition shadow-sm"><i class="fa-regular fa-bell mr-1"></i> Ingatkan Saya</button>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ==================== TENTANG RT 04 TAB ==================== -->
+                <div x-show="activeTab === 'rt04'" class="space-y-6">
+                    <div class="relative rounded-3xl overflow-hidden h-40 bg-nature-900 text-white p-6 flex items-center justify-center text-center">
+                        <div class="absolute inset-0 opacity-30 bg-cover bg-center" :style="'background-image: url(' + settings.menuBanners.rt04 + ')'"></div>
+                        <div class="relative z-10 space-y-1 flex flex-col items-center justify-center text-center">
+                            <span class="bg-white/20 text-white px-3 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider inline-block">Profil & Pengurus</span>
+                            <h2 class="text-xl sm:text-2xl font-extrabold mt-1">Tentang RT 04 / RW 12</h2>
+                        </div>
+                    </div>
+
+                    <div id="printable-area" class="bg-white rounded-3xl p-6 sm:p-8 shadow-sm border border-slate-100 space-y-6">
+                        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-slate-100 pb-4">
+                            <div><h3 class="text-xl font-bold text-slate-900" x-text="settings.appName"></h3><p class="text-sm text-slate-500 mt-0.5">Informasi profil kepengurusan resmi dan kontak sekretariat</p></div>
+                            <div class="flex gap-2 no-print">
+                                <template x-if="canManageData()">
+                                    <button @click="openAddPengurusModal()" class="bg-nature-700 hover:bg-nature-800 text-white px-4 py-2.5 rounded-xl font-semibold text-xs shadow-md transition flex items-center gap-2"><i class="fa-solid fa-user-plus"></i> Tambah Pengurus</button>
+                                </template>
+                                <button @click="printSection()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-2.5 rounded-xl font-semibold text-xs transition flex items-center gap-2"><i class="fa-solid fa-print"></i> Print</button>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 pt-2">
+                            <template x-for="p in pengurusList" :key="p.id">
+                                <div class="bg-white border border-slate-200 p-6 rounded-3xl text-center space-y-3 shadow-sm relative group hover:border-nature-400 transition">
+                                    <template x-if="canManageData()">
+                                        <div class="absolute top-4 right-4 flex gap-1 opacity-80 sm:opacity-0 group-hover:opacity-100 transition no-print">
+                                            <button @click="editPengurus(p)" class="w-7 h-7 bg-amber-50 text-amber-700 rounded-lg flex items-center justify-center text-xs hover:bg-amber-100" title="Edit"><i class="fa-solid fa-pen"></i></button>
+                                            <button @click="deletePengurus(p.id)" class="w-7 h-7 bg-rose-50 text-rose-700 rounded-lg flex items-center justify-center text-xs hover:bg-rose-100" title="Hapus"><i class="fa-solid fa-trash-can"></i></button>
+                                        </div>
+                                    </template>
+                                    <div class="w-20 h-20 bg-emerald-100 text-nature-700 rounded-full mx-auto flex items-center justify-center text-3xl font-bold"><i :class="p.icon"></i></div>
+                                    <div><h5 class="font-extrabold text-base text-slate-900" x-text="p.nama"></h5><p class="text-xs text-nature-700 uppercase font-semibold tracking-wider mt-0.5" x-text="p.jabatan"></p></div>
+                                    <p class="text-xs text-slate-500 pt-2 border-t border-slate-100" x-text="p.tugas"></p>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ==================== PENGATURAN TAB ==================== -->
+                <div x-show="activeTab === 'pengaturan'" class="space-y-6">
+                    <div class="relative rounded-3xl overflow-hidden h-40 bg-nature-900 text-white p-6 flex items-center justify-center text-center">
+                        <div class="absolute inset-0 opacity-30 bg-cover bg-center" :style="'background-image: url(' + settings.menuBanners.pengaturan + ')'"></div>
+                        <div class="relative z-10 space-y-1 flex flex-col items-center justify-center text-center">
+                            <span class="bg-white/20 text-white px-3 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider inline-block">Konfigurasi Sistem</span>
+                            <h2 class="text-xl sm:text-2xl font-extrabold mt-1">Pengaturan & Backup Data</h2>
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-3xl p-6 sm:p-8 shadow-sm border border-slate-100 space-y-8">
+                        <div class="border-b border-slate-100 pb-4">
+                            <h3 class="text-xl font-bold text-slate-900">Pengaturan & Konfigurasi Sistem RT 04</h3>
+                            <p class="text-sm text-slate-500 mt-0.5">Kelola identitas aplikasi, upload logo RT, upload gambar banner setiap menu, nomor surat, format kwitansi kas, manajemen login akun, serta backup & reset data</p>
+                        </div>
+
+                        <template x-if="!canManageData()">
+                            <div class="p-4 bg-amber-50 text-amber-800 rounded-2xl border border-amber-200 text-xs font-semibold flex items-center gap-2">
+                                <i class="fa-solid fa-triangle-exclamation text-base"></i> Anda login sebagai Warga. Menu pengaturan sistem hanya dapat diakses oleh Pengurus RT.
+                            </div>
+                        </template>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-8" :class="canManageData() ? '' : 'opacity-60 pointer-events-none'">
+                            <div class="bg-slate-50 p-6 rounded-3xl border border-slate-200 space-y-4">
+                                <h4 class="font-bold text-slate-900 text-sm flex items-center gap-2"><i class="fa-solid fa-seedling text-nature-600"></i> Identitas, Logo & Upload Gambar</h4>
+                                <div class="space-y-3 text-xs">
+                                    <div><label class="block font-semibold uppercase text-slate-600 mb-1">Nama Aplikasi / RT</label><input type="text" x-model="settings.appName" class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl"></div>
+                                    <div><label class="block font-semibold uppercase text-slate-600 mb-1">Sub Nama / Perumahan</label><input type="text" x-model="settings.appSubName" class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl"></div>
+                                    <div><label class="block font-semibold uppercase text-slate-600 mb-1">Lokasi / Wilayah</label><input type="text" x-model="settings.appLocation" class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl"></div>
+                                    <div>
+                                        <label class="block font-semibold uppercase text-slate-600 mb-1">Upload Logo RT (File Gambar)</label>
+                                        <div class="flex items-center gap-3">
+                                            <input type="file" accept="image/*" @change="handleLogoUpload($event)" class="w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-nature-50 file:text-nature-700 hover:file:bg-nature-100 cursor-pointer bg-white border border-slate-200 rounded-xl">
+                                            <template x-if="settings.customLogoUrl"><button @click="settings.customLogoUrl = ''" class="text-rose-600 hover:text-rose-700 font-semibold px-2 py-1 text-xs">Hapus</button></template>
+                                        </div>
+                                        <input type="text" x-model="settings.logoIcon" class="w-full mt-1 px-3 py-2 bg-white border border-slate-200 rounded-xl font-mono text-[11px]" placeholder="FontAwesome Icon...">
+                                    </div>
+                                    <div>
+                                        <label class="block font-semibold uppercase text-slate-600 mb-1">Upload Gambar Halaman Pembuka (Welcome BG)</label>
+                                        <input type="file" accept="image/*" @change="handleWelcomeBgUpload($event)" class="w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-nature-50 file:text-nature-700 hover:file:bg-nature-100 cursor-pointer bg-white border border-slate-200 rounded-xl mb-1">
+                                        <input type="text" x-model="settings.welcomeBgImg" class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-[11px]">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="bg-slate-50 p-6 rounded-3xl border border-slate-200 space-y-4">
+                                <h4 class="font-bold text-slate-900 text-sm flex items-center gap-2"><i class="fa-solid fa-file-invoice text-nature-600"></i> Pengaturan Penomoran & Kwitansi</h4>
+                                <div class="space-y-3 text-xs">
+                                    <div><label class="block font-semibold uppercase text-slate-600 mb-1">Format Nomor Surat Resmi</label><input type="text" x-model="settings.suratNomorFormat" class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl font-mono"></div>
+                                    <div><label class="block font-semibold uppercase text-slate-600 mb-1">Format Kwitansi Pembayaran Kas</label><input type="text" x-model="settings.kwitansiFormat" class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl font-mono"></div>
+                                    
+                                    <div class="pt-2 border-t border-slate-200">
+                                        <h5 class="font-extrabold text-nature-900 text-sm flex items-center gap-2 mb-2"><i class="fa-solid fa-shield-halved text-nature-700"></i> Otoritas Kredensial Login Administrator</h5>
+                                        <div class="space-y-2 bg-white p-4 rounded-2xl border border-nature-200 shadow-sm">
+                                            <div><label class="block font-semibold uppercase text-slate-600 mb-1">Username Admin / Pengurus RT</label><input type="text" x-model="settings.adminUser" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-mono"></div>
+                                            <div><label class="block font-semibold uppercase text-slate-600 mb-1">Password Admin / Pengurus RT</label><input type="text" x-model="settings.adminPass" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-mono"></div>
+                                            <div class="border-t border-slate-100 pt-2 mt-2">
+                                                <div><label class="block font-semibold uppercase text-slate-600 mb-1">Username Warga</label><input type="text" x-model="settings.wargaUser" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-mono"></div>
+                                                <div><label class="block font-semibold uppercase text-slate-600 mb-1">Password Warga</label><input type="text" x-model="settings.wargaPass" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-mono"></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-slate-50 p-6 rounded-3xl border border-slate-200 space-y-4" :class="canManageData() ? '' : 'opacity-60 pointer-events-none'">
+                            <h4 class="font-bold text-slate-900 text-sm flex items-center gap-2"><i class="fa-solid fa-image text-nature-600"></i> Upload Gambar Banner Masing-Masing Menu</h4>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 text-xs">
+                                <div><label class="block font-semibold uppercase text-slate-600 mb-1">Dashboard Banner</label><input type="file" accept="image/*" @change="handleMenuBannerUpload('dashboard', $event)" class="w-full text-[10px] text-slate-500 mb-1"><input type="text" x-model="settings.menuBanners.dashboard" class="w-full px-2 py-1 bg-white border border-slate-200 rounded text-[10px]"></div>
+                                <div><label class="block font-semibold uppercase text-slate-600 mb-1">Data Warga Banner</label><input type="file" accept="image/*" @change="handleMenuBannerUpload('warga', $event)" class="w-full text-[10px] text-slate-500 mb-1"><input type="text" x-model="settings.menuBanners.warga" class="w-full px-2 py-1 bg-white border border-slate-200 rounded text-[10px]"></div>
+                                <div><label class="block font-semibold uppercase text-slate-600 mb-1">Surat Banner</label><input type="file" accept="image/*" @change="handleMenuBannerUpload('surat', $event)" class="w-full text-[10px] text-slate-500 mb-1"><input type="text" x-model="settings.menuBanners.surat" class="w-full px-2 py-1 bg-white border border-slate-200 rounded text-[10px]"></div>
+                                <div><label class="block font-semibold uppercase text-slate-600 mb-1">Aspirasi Banner</label><input type="file" accept="image/*" @change="handleMenuBannerUpload('aspirasi', $event)" class="w-full text-[10px] text-slate-500 mb-1"><input type="text" x-model="settings.menuBanners.aspirasi" class="w-full px-2 py-1 bg-white border border-slate-200 rounded text-[10px]"></div>
+                                <div><label class="block font-semibold uppercase text-slate-600 mb-1">Kas RT Banner</label><input type="file" accept="image/*" @change="handleMenuBannerUpload('keuangan', $event)" class="w-full text-[10px] text-slate-500 mb-1"><input type="text" x-model="settings.menuBanners.keuangan" class="w-full px-2 py-1 bg-white border border-slate-200 rounded text-[10px]"></div>
+                                <div><label class="block font-semibold uppercase text-slate-600 mb-1">Agenda Banner</label><input type="file" accept="image/*" @change="handleMenuBannerUpload('agenda', $event)" class="w-full text-[10px] text-slate-500 mb-1"><input type="text" x-model="settings.menuBanners.agenda" class="w-full px-2 py-1 bg-white border border-slate-200 rounded text-[10px]"></div>
+                                <div><label class="block font-semibold uppercase text-slate-600 mb-1">Tentang RT 04 Banner</label><input type="file" accept="image/*" @change="handleMenuBannerUpload('rt04', $event)" class="w-full text-[10px] text-slate-500 mb-1"><input type="text" x-model="settings.menuBanners.rt04" class="w-full px-2 py-1 bg-white border border-slate-200 rounded text-[10px]"></div>
+                                <div><label class="block font-semibold uppercase text-slate-600 mb-1">Pengaturan Banner</label><input type="file" accept="image/*" @change="handleMenuBannerUpload('pengaturan', $event)" class="w-full text-[10px] text-slate-500 mb-1"><input type="text" x-model="settings.menuBanners.pengaturan" class="w-full px-2 py-1 bg-white border border-slate-200 rounded text-[10px]"></div>
+                            </div>
+                        </div>
+
+                        <div class="p-6 bg-nature-50 border border-nature-200 rounded-3xl space-y-4" :class="canManageData() ? '' : 'opacity-60 pointer-events-none'">
+                            <h4 class="font-bold text-nature-900 text-sm flex items-center gap-2"><i class="fa-solid fa-database text-nature-700"></i> Manajemen Data & Backup Sistem</h4>
+                            <div class="flex flex-wrap gap-3 pt-2">
+                                <button @click="saveSystemSettings()" class="bg-nature-700 hover:bg-nature-800 text-white px-5 py-2.5 rounded-xl text-xs font-semibold shadow transition flex items-center gap-2"><i class="fa-solid fa-floppy-disk"></i> Simpan Pengaturan</button>
+                                <button @click="backupSystemData()" class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl text-xs font-semibold shadow transition flex items-center gap-2"><i class="fa-solid fa-download"></i> Backup Data (JSON)</button>
+                                <button @click="resetSystemData()" class="bg-rose-600 hover:bg-rose-700 text-white px-5 py-2.5 rounded-xl text-xs font-semibold shadow transition flex items-center gap-2"><i class="fa-solid fa-rotate-right"></i> Reset Sistem / Factory Default</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </main>
+
+            <!-- ==================== MODALS ==================== -->
+            <!-- LOGIN MODAL -->
+            <div x-show="modalLoginOpen" class="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4">
+                <div class="bg-white w-full max-w-md rounded-3xl p-6 sm:p-8 shadow-2xl space-y-6">
+                    <div class="flex justify-between items-center border-b border-slate-100 pb-3">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-xl bg-nature-100 text-nature-700 flex items-center justify-center text-lg font-bold"><i class="fa-solid fa-right-to-bracket"></i></div>
+                            <div><h3 class="text-base font-bold text-slate-900">Login Portal RT 04</h3><p class="text-xs text-slate-500">Masukkan username & password</p></div>
+                        </div>
+                        <button @click="modalLoginOpen = false" class="w-8 h-8 rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 flex items-center justify-center"><i class="fa-solid fa-xmark"></i></button>
+                    </div>
+                    <div class="space-y-4">
+                        <div class="grid grid-cols-2 gap-3">
+                            <button @click="loginRole = 'pengurus'" class="p-3 rounded-2xl border-2 transition text-center space-y-1" :class="loginRole === 'pengurus' ? 'border-nature-600 bg-emerald-50/50 text-nature-900 font-bold' : 'border-slate-200 text-slate-700'"><i class="fa-solid fa-user-tie text-xl text-nature-600"></i><p class="text-xs">Pengurus RT</p></button>
+                            <button @click="loginRole = 'warga'" class="p-3 rounded-2xl border-2 transition text-center space-y-1" :class="loginRole === 'warga' ? 'border-blue-600 bg-blue-50/50 text-blue-900 font-bold' : 'border-slate-200 text-slate-700'"><i class="fa-solid fa-user text-xl text-blue-600"></i><p class="text-xs">Warga</p></button>
+                        </div>
+                        <form @submit.prevent="submitLogin" class="space-y-3 pt-1 text-xs">
+                            <div><label class="block font-semibold uppercase text-slate-600 mb-1">Username</label><input type="text" x-model="loginUsername" required class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl"></div>
+                            <div><label class="block font-semibold uppercase text-slate-600 mb-1">Password</label><input type="password" x-model="loginPassword" required class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl"></div>
+                            <button type="submit" class="w-full bg-nature-700 hover:bg-nature-800 text-white font-semibold py-3 rounded-xl text-xs shadow-md transition flex items-center justify-center gap-2 mt-2"><i class="fa-solid fa-check"></i> Masuk Sekarang</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- VIEW RESIDENT MODAL -->
+            <div x-show="modalViewResident" class="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4">
+                <div id="printable-card" class="bg-white w-full max-w-md rounded-3xl p-6 sm:p-8 shadow-2xl space-y-6">
+                    <div class="flex justify-between items-center border-b border-slate-100 pb-4">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-xl bg-nature-100 text-nature-700 flex items-center justify-center text-lg font-bold"><i class="fa-solid fa-user"></i></div>
+                            <div><h3 class="text-base font-bold text-slate-900" x-text="currentResident ? currentResident.nama : ''"></h3><p class="text-xs text-slate-500 font-mono" x-text="'NIK: ' + (currentResident ? currentResident.nik : '')"></p></div>
+                        </div>
+                        <button @click="modalViewResident = false" class="w-8 h-8 rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 flex items-center justify-center no-print"><i class="fa-solid fa-xmark"></i></button>
+                    </div>
+                    <div class="space-y-3 text-sm">
+                        <div class="flex justify-between py-1 border-b border-slate-50"><span class="text-slate-500">No. Rumah / Blok</span><span class="font-semibold text-slate-800" x-text="currentResident ? currentResident.rumah : ''"></span></div>
+                        <div class="flex justify-between py-1 border-b border-slate-50"><span class="text-slate-500">Status Hubungan</span><span class="font-semibold text-nature-700" x-text="currentResident ? (currentResident.hub || 'Kepala Keluarga') : ''"></span></div>
+                        <div class="flex justify-between py-1 border-b border-slate-50"><span class="text-slate-500">Jenis Kelamin</span><span class="font-semibold text-slate-800" x-text="currentResident ? currentResident.gender : ''"></span></div>
+                        <div class="flex justify-between py-1 border-b border-slate-50"><span class="text-slate-500">Agama</span><span class="font-semibold text-slate-800" x-text="currentResident ? currentResident.agama : ''"></span></div>
+                        <div class="flex justify-between py-1 border-b border-slate-50"><span class="text-slate-500">Pekerjaan</span><span class="font-semibold text-slate-800" x-text="currentResident ? currentResident.pekerjaan : ''"></span></div>
+                        <div class="flex justify-between py-1 border-b border-slate-50"><span class="text-slate-500">Status Warga</span><span class="font-semibold text-slate-800" x-text="currentResident ? currentResident.status : ''"></span></div>
+                        <div class="flex justify-between py-1 border-b border-slate-50"><span class="text-slate-500">Tempat, Tanggal Lahir</span><span class="font-semibold text-slate-800" x-text="currentResident ? (currentResident.tempatLahir + ', ' + currentResident.tanggalLahir) : ''"></span></div>
+                        <div class="flex justify-between py-1"><span class="text-slate-500">Usia</span><span class="font-semibold text-slate-800" x-text="currentResident ? (currentResident.usia + ' Tahun') : ''"></span></div>
+                    </div>
+                    <div class="flex gap-3 pt-2 no-print">
+                        <button @click="printSection()" class="flex-1 bg-nature-700 hover:bg-nature-800 text-white font-semibold py-2.5 rounded-xl text-sm flex items-center justify-center gap-2"><i class="fa-solid fa-print"></i> Print Kartu</button>
+                        <button @click="modalViewResident = false" class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold py-2.5 rounded-xl text-sm">Tutup</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- KK MODAL (SINGLE PAGE & DYNAMIC FILENAME) -->
+            <div x-show="modalViewKK" class="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4">
+                <div id="printable-kk" class="bg-white w-full max-w-2xl rounded-3xl p-5 sm:p-6 shadow-2xl space-y-3 max-h-[95vh] overflow-y-auto relative text-xs">
+                    <div class="flex justify-between items-center border-b border-slate-200 pb-2">
+                        <div class="text-center w-full">
+                            <h3 class="text-sm font-extrabold uppercase tracking-wider text-slate-900">KARTU KELUARGA (KK) RT 04 / RW 12</h3>
+                            <p class="text-[10px] text-nature-700 font-semibold" x-text="settings.appSubName"></p>
+                        </div>
+                        <button @click="modalViewKK = false" class="w-7 h-7 rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 flex items-center justify-center no-print shrink-0"><i class="fa-solid fa-xmark"></i></button>
+                    </div>
+
+                    <div class="bg-slate-50 p-2.5 rounded-2xl border border-slate-200 grid grid-cols-2 gap-1.5 text-[11px]">
+                        <div><p class="text-slate-500">No. Rumah / Blok:</p><p class="font-bold text-slate-900 text-xs" x-text="currentKK ? currentKK.rumah : ''"></p></div>
+                        <div><p class="text-slate-500">Kepala Keluarga:</p><p class="font-bold text-slate-900 text-xs" x-text="currentKK ? currentKK.nama : ''"></p></div>
+                        <div><p class="text-slate-500">Nomor Kartu Keluarga (KK):</p><p class="font-bold text-slate-900 font-mono" x-text="currentKK ? currentKK.nik : ''"></p></div>
+                        <div><p class="text-slate-500">Kelurahan / Kecamatan:</p><p class="font-bold text-slate-900" x-text="settings.appLocation"></p></div>
+                        <div><p class="text-slate-500">Voltase Listrik Rumah:</p><p class="font-bold text-slate-900" x-text="currentKK ? (currentKK.listrik || '1300VA') : '1300VA'"></p></div>
+                        <div><p class="text-slate-500">Penggunaan Internet:</p><p class="font-bold text-slate-900" x-text="currentKK ? (currentKK.internet || 'IndiHome') : 'IndiHome'"></p></div>
+                        <div><p class="text-slate-500">Sumber Air Rumah Tangga:</p><p class="font-bold text-slate-900" x-text="currentKK ? (currentKK.air || 'Sumur Bor') : 'Sumur Bor'"></p></div>
+                        <div><p class="text-slate-500">Kepemilikan Kendaraan (Nomor Plat):</p><p class="font-bold text-slate-900" x-text="currentKK ? ((currentKK.kendaraan || 'Motor 1') + ' - Plat: ' + (currentKK.platNomor || 'B 1234 XYZ')) : ''"></p></div>
+                    </div>
+
+                    <div class="space-y-1">
+                        <h4 class="font-bold text-[11px] uppercase text-slate-600">Daftar Anggota Keluarga (Tersinkronisasi)</h4>
+                        <div class="overflow-x-auto rounded-xl border border-slate-200">
+                            <table class="w-full text-left text-[11px]">
+                                <thead>
+                                    <tr class="bg-slate-100 text-slate-700 font-bold uppercase border-b border-slate-200">
+                                        <th class="p-1.5">Nama Lengkap</th>
+                                        <th class="p-1.5">NIK</th>
+                                        <th class="p-1.5">Hubungan</th>
+                                        <th class="p-1.5">L/P</th>
+                                        <th class="p-1.5">Pekerjaan</th>
+                                        <th class="p-1.5">Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-slate-100">
+                                    <template x-if="currentKK">
+                                        <tr>
+                                            <td class="p-1.5 font-bold text-slate-900" x-text="currentKK.nama"></td>
+                                            <td class="p-1.5 font-mono" x-text="currentKK.nik"></td>
+                                            <td class="p-1.5 font-semibold text-nature-700">Kepala Keluarga</td>
+                                            <td class="p-1.5" x-text="currentKK.gender"></td>
+                                            <td class="p-1.5" x-text="currentKK.pekerjaan"></td>
+                                            <td class="p-1.5"><span class="bg-emerald-100 text-nature-800 px-1.5 py-0.5 rounded-full font-semibold" x-text="currentKK.status"></span></td>
+                                        </tr>
+                                    </template>
+                                    <template x-for="fam in familyMembers" :key="fam.id">
+                                        <tr>
+                                            <td class="p-1.5 font-bold text-slate-900" x-text="fam.nama"></td>
+                                            <td class="p-1.5 font-mono" x-text="fam.nik"></td>
+                                            <td class="p-1.5 font-semibold text-slate-700" x-text="fam.hub || 'Anggota'"></td>
+                                            <td class="p-1.5" x-text="fam.gender"></td>
+                                            <td class="p-1.5" x-text="fam.pekerjaan"></td>
+                                            <td class="p-1.5"><span class="bg-emerald-100 text-nature-800 px-1.5 py-0.5 rounded-full font-semibold" x-text="fam.status"></span></td>
+                                        </tr>
+                                    </template>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="bg-emerald-50/60 p-2.5 rounded-2xl border border-emerald-200/60 space-y-1.5 text-[11px]">
+                        <h4 class="font-bold text-nature-900 uppercase tracking-wider"><i class="fa-solid fa-chart-pie mr-1 text-nature-700"></i> Statistik & Demografi Rumah Tangga Ini</h4>
+                        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                            <div class="bg-white p-2 rounded-xl border border-emerald-100"><p class="text-[9px] text-slate-500 uppercase font-semibold">Usia</p><p class="font-bold text-slate-800 mt-0.5 text-[10px]" x-text="getHouseAgeStats(currentKK ? currentKK.rumah : '')"></p></div>
+                            <div class="bg-white p-2 rounded-xl border border-emerald-100"><p class="text-[9px] text-slate-500 uppercase font-semibold">Pendidikan</p><p class="font-bold text-slate-800 mt-0.5 text-[10px]" x-text="getHouseEduStats(currentKK ? currentKK.rumah : '')"></p></div>
+                            <div class="bg-white p-2 rounded-xl border border-emerald-100"><p class="text-[9px] text-slate-500 uppercase font-semibold">Pekerjaan</p><p class="font-bold text-slate-800 mt-0.5 text-[10px]" x-text="getHouseJobStats(currentKK ? currentKK.rumah : '')"></p></div>
+                            <div class="bg-white p-2 rounded-xl border border-emerald-100"><p class="text-[9px] text-slate-500 uppercase font-semibold">Agama</p><p class="font-bold text-slate-800 mt-0.5 text-[10px]" x-text="getHouseRelStats(currentKK ? currentKK.rumah : '')"></p></div>
+                        </div>
+                    </div>
+
+                    <div class="pt-1 flex justify-between items-end border-t border-slate-200 text-xs">
+                        <div class="flex items-center gap-2 bg-slate-50 border border-slate-300 p-2 rounded-xl">
+                            <div id="qrcode-kk-container" class="w-12 h-12 bg-white flex items-center justify-center p-1"></div>
+                            <div class="text-[10px] space-y-0.5">
+                                <p class="font-bold text-slate-900">VALIDASI RESMI KK RT 04</p>
+                                <p class="font-mono text-nature-700 font-semibold" x-text="verificationCode"></p>
+                                <p class="text-slate-500">Scan QR untuk verifikasi</p>
+                            </div>
+                        </div>
+                        <div class="text-center space-y-4 text-[11px] font-serif">
+                            <p>Sukamantri, <span x-text="currentDate"></span><br><strong>Ketua RT 04</strong></p>
+                            <p class="font-bold" x-text="pengurusList.find(p=>p.jabatan.includes('Ketua RT'))?.nama || 'Idrus Sadi'"></p>
+                        </div>
+                    </div>
+
+                    <div class="flex gap-3 pt-1 no-print">
+                        <button @click="printKKWithDynamicFilename()" class="flex-1 bg-nature-700 hover:bg-nature-800 text-white font-semibold py-2.5 rounded-xl text-xs flex items-center justify-center gap-2"><i class="fa-solid fa-print"></i> Cetak / Simpan PDF Kartu Keluarga</button>
+                        <button @click="modalViewKK = false" class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold py-2.5 rounded-xl text-xs">Tutup</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- RESIDENT FORM MODAL -->
+            <div x-show="modalResidentForm" class="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4">
+                <div class="bg-white w-full max-w-lg rounded-3xl p-6 sm:p-8 shadow-2xl space-y-6 max-h-[90vh] overflow-y-auto">
+                    <div class="flex justify-between items-center border-b border-slate-100 pb-3">
+                        <h3 class="text-lg font-bold text-slate-900" x-text="isEditingResident ? 'Edit Data Warga' : 'Tambah Warga Baru'"></h3>
+                        <button @click="modalResidentForm = false" class="w-8 h-8 rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 flex items-center justify-center"><i class="fa-solid fa-xmark"></i></button>
+                    </div>
+                    <form @submit.prevent="saveResident" class="space-y-3 text-xs">
+                        <div class="grid grid-cols-2 gap-3">
+                            <div><label class="block font-semibold uppercase text-slate-600 mb-1">No. Rumah / Blok</label><input type="text" x-model="residentForm.rumah" @input="onHouseInputChanged" required placeholder="Blok A1 No. 3" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl"></div>
+                            <div>
+                                <label class="block font-semibold uppercase text-slate-600 mb-1">Status Hubungan KK</label>
+                                <select x-model="residentForm.hub" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-bold text-nature-700">
+                                    <option value="Kepala Keluarga">Kepala Keluarga</option>
+                                    <option value="Istri">Istri</option>
+                                    <option value="Anak 1">Anak 1</option>
+                                    <option value="Anak 2">Anak 2</option>
+                                    <option value="Anak 3">Anak 3</option>
+                                    <option value="Anak 4">Anak 4</option>
+                                    <option value="Anak 5">Anak 5</option>
+                                    <option value="Anak 6">Anak 6</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div><label class="block font-semibold uppercase text-slate-600 mb-1">Nama Lengkap</label><input type="text" x-model="residentForm.nama" required class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl"></div>
+                        <div class="grid grid-cols-2 gap-3">
+                            <div><label class="block font-semibold uppercase text-slate-600 mb-1">NIK / No. KK</label><input type="text" x-model="residentForm.nik" required class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-mono"></div>
+                            <div>
+                                <label class="block font-semibold uppercase text-slate-600 mb-1">Pendidikan Terakhir</label>
+                                <select x-model="residentForm.pendidikan" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl">
+                                    <option value="SD">SD</option><option value="SMP">SMP</option><option value="SMA">SMA</option><option value="D3/S1">D3/S1</option><option value="S2/S3">S2/S3</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="block font-semibold uppercase text-slate-600 mb-1">Jenis Kelamin</label>
+                                <select x-model="residentForm.gender" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl"><option value="Laki-Laki">Laki-Laki</option><option value="Perempuan">Perempuan</option></select>
+                            </div>
+                            <div>
+                                <label class="block font-semibold uppercase text-slate-600 mb-1">Agama</label>
+                                <select x-model="residentForm.agama" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl"><option value="Islam">Islam</option><option value="Kristen">Kristen</option><option value="Katholik">Katholik</option><option value="Hindu">Hindu</option><option value="Budha">Budha</option></select>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-3">
+                            <div><label class="block font-semibold uppercase text-slate-600 mb-1">Tempat Lahir</label><input type="text" x-model="residentForm.tempatLahir" required class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl"></div>
+                            <div><label class="block font-semibold uppercase text-slate-600 mb-1">Tanggal Lahir</label><input type="text" x-model="residentForm.tanggalLahir" required placeholder="10 Januari 1985" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl"></div>
+                        </div>
+                        <div class="grid grid-cols-3 gap-3">
+                            <div><label class="block font-semibold uppercase text-slate-600 mb-1">Usia</label><input type="number" x-model="residentForm.usia" required class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl"></div>
+                            <div><label class="block font-semibold uppercase text-slate-600 mb-1">Pekerjaan</label><input type="text" x-model="residentForm.pekerjaan" required class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl"></div>
+                            <div>
+                                <label class="block font-semibold uppercase text-slate-600 mb-1">Status Warga</label>
+                                <select x-model="residentForm.status" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl"><option value="Tetap">Tetap</option><option value="Kontrak">Kontrak</option><option value="Meninggal">Meninggal</option><option value="Cerai">Cerai</option></select>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-3 pt-2 border-t border-slate-100">
+                            <div>
+                                <label class="block font-semibold uppercase text-slate-600 mb-1">Voltase Listrik</label>
+                                <select x-model="residentForm.listrik" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl"><option value="450VA">450VA</option><option value="900VA">900VA</option><option value="1300VA">1300VA</option><option value="2200VA+">2200VA+</option></select>
+                            </div>
+                            <div>
+                                <label class="block font-semibold uppercase text-slate-600 mb-1">Internet</label>
+                                <select x-model="residentForm.internet" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl"><option value="IndiHome">IndiHome</option><option value="FirstMedia">FirstMedia</option><option value="XL Home">XL Home</option><option value="Seluler/Orbit">Seluler/Orbit</option></select>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="block font-semibold uppercase text-slate-600 mb-1">Sumber Air</label>
+                                <select x-model="residentForm.air" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl"><option value="PAM / AETRA">PAM / AETRA</option><option value="Sumur Bor">Sumur Bor</option><option value="Galon / Isi Ulang">Galon / Isi Ulang</option></select>
+                            </div>
+                            <div>
+                                <label class="block font-semibold uppercase text-slate-600 mb-1">Kendaraan</label>
+                                <select x-model="residentForm.kendaraan" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl"><option value="Motor 1">Motor 1</option><option value="Mobil 1">Mobil 1</option><option value="Mobil 2+">Mobil 2+</option><option value="Motor & Mobil">Motor & Mobil</option></select>
+                            </div>
+                        </div>
+                        <div><label class="block font-semibold uppercase text-slate-600 mb-1">Nomor Plat Kendaraan</label><input type="text" x-model="residentForm.platNomor" required placeholder="B 1234 XYZ" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl"></div>
+
+                        <div class="pt-3 flex gap-3">
+                            <button type="button" @click="modalResidentForm = false" class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold py-2.5 rounded-xl text-xs">Batal</button>
+                            <button type="submit" class="flex-1 bg-nature-700 hover:bg-nature-800 text-white font-semibold py-2.5 rounded-xl text-xs shadow-md">Simpan</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- PENGURUS FORM MODAL -->
+            <div x-show="modalPengurusForm" class="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4">
+                <div class="bg-white w-full max-w-md rounded-3xl p-6 sm:p-8 shadow-2xl space-y-6">
+                    <div class="flex justify-between items-center border-b border-slate-100 pb-3"><h3 class="text-lg font-bold text-slate-900" x-text="isEditingPengurus ? 'Edit Pengurus' : 'Tambah Pengurus'"></h3><button @click="modalPengurusForm = false" class="w-8 h-8 rounded-full bg-slate-100 text-slate-500"><i class="fa-solid fa-xmark"></i></button></div>
+                    <form @submit.prevent="savePengurus" class="space-y-4">
+                        <div><label class="block text-xs font-semibold uppercase text-slate-600 mb-1">Nama & Gelar</label><input type="text" x-model="pengurusForm.nama" required class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm"></div>
+                        <div><label class="block text-xs font-semibold uppercase text-slate-600 mb-1">Jabatan</label><input type="text" x-model="pengurusForm.jabatan" required class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm"></div>
+                        <div><label class="block text-xs font-semibold uppercase text-slate-600 mb-1">Tugas</label><textarea x-model="pengurusForm.tugas" rows="2" required class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm"></textarea></div>
+                        <div><label class="block text-xs font-semibold uppercase text-slate-600 mb-1">Icon FontAwesome</label><input type="text" x-model="pengurusForm.icon" required class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-mono"></div>
+                        <div class="pt-2 flex gap-3"><button type="button" @click="modalPengurusForm = false" class="flex-1 bg-slate-100 py-3 rounded-xl text-sm font-semibold">Batal</button><button type="submit" class="flex-1 bg-nature-700 text-white py-3 rounded-xl text-sm font-semibold">Simpan</button></div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- TRANSACTION FORM MODAL -->
+            <div x-show="modalTransactionForm" class="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4">
+                <div class="bg-white w-full max-w-md rounded-3xl p-6 sm:p-8 shadow-2xl space-y-6">
+                    <div class="flex justify-between items-center border-b border-slate-100 pb-3"><h3 class="text-lg font-bold text-slate-900">Catat Transaksi Kas Baru</h3><button @click="modalTransactionForm = false" class="w-8 h-8 rounded-full bg-slate-100 text-slate-500"><i class="fa-solid fa-xmark"></i></button></div>
+                    <form @submit.prevent="saveTransaction" class="space-y-4">
+                        <div>
+                            <label class="block text-xs font-semibold uppercase text-slate-600 mb-1">Jenis Transaksi</label>
+                            <select x-model="transactionForm.jenis" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm"><option value="Pemasukan">Pemasukan (+)</option><option value="Pengeluaran">Pengeluaran (-)</option></select>
+                        </div>
+                        <div><label class="block text-xs font-semibold uppercase text-slate-600 mb-1">Kategori</label><input type="text" x-model="transactionForm.kategori" required placeholder="Iuran Warga" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm"></div>
+                        <div><label class="block text-xs font-semibold uppercase text-slate-600 mb-1">Keterangan Detail</label><input type="text" x-model="transactionForm.ket" required placeholder="Keterangan..." class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm"></div>
+                        <div><label class="block text-xs font-semibold uppercase text-slate-600 mb-1">Nominal (Rp)</label><input type="number" x-model.number="transactionForm.nominal" required class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm"></div>
+                        <div class="pt-2 flex gap-3"><button type="button" @click="modalTransactionForm = false" class="flex-1 bg-slate-100 py-3 rounded-xl text-sm font-semibold">Batal</button><button type="submit" class="flex-1 bg-nature-700 text-white py-3 rounded-xl text-sm font-semibold">Simpan</button></div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- AGENDA FORM MODAL -->
+            <div x-show="modalAgendaForm" class="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4">
+                <div class="bg-white w-full max-w-md rounded-3xl p-6 sm:p-8 shadow-2xl space-y-6">
+                    <div class="flex justify-between items-center border-b border-slate-100 pb-3"><h3 class="text-lg font-bold text-slate-900">Tambah Agenda Baru</h3><button @click="modalAgendaForm = false" class="w-8 h-8 rounded-full bg-slate-100 text-slate-500"><i class="fa-solid fa-xmark"></i></button></div>
+                    <form @submit.prevent="saveAgenda" class="space-y-4">
+                        <div><label class="block text-xs font-semibold uppercase text-slate-600 mb-1">Judul Kegiatan</label><input type="text" x-model="agendaForm.judul" required class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm"></div>
+                        <div><label class="block text-xs font-semibold uppercase text-slate-600 mb-1">Tanggal</label><input type="text" x-model="agendaForm.tanggal" required class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm"></div>
+                        <div><label class="block text-xs font-semibold uppercase text-slate-600 mb-1">Waktu</label><input type="text" x-model="agendaForm.waktu" required class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm"></div>
+                        <div><label class="block text-xs font-semibold uppercase text-slate-600 mb-1">Lokasi</label><input type="text" x-model="agendaForm.lokasi" required class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm"></div>
+                        <div>
+                            <label class="block text-xs font-semibold uppercase text-slate-600 mb-1">Status</label>
+                            <select x-model="agendaForm.status" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm">
+                                <option value="Akan Datang">Akan Datang</option>
+                                <option value="Rutin">Rutin</option>
+                                <option value="Penting">Penting</option>
+                            </select>
+                        </div>
+                        <div class="pt-2 flex gap-3"><button type="button" @click="modalAgendaForm = false" class="flex-1 bg-slate-100 py-3 rounded-xl text-sm font-semibold">Batal</button><button type="submit" class="flex-1 bg-nature-700 text-white py-3 rounded-xl text-sm font-semibold">Simpan</button></div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Notification Toast -->
+            <div x-show="toastShow" x-transition class="fixed bottom-6 right-6 z-50 bg-slate-900 text-white px-6 py-3.5 rounded-2xl shadow-xl flex items-center gap-3 text-sm">
+                <i class="fa-solid fa-circle-check text-nature-400 text-lg"></i>
+                <span x-text="toastMessage"></span>
+            </div>
+
+            <footer class="bg-white border-t border-slate-200 py-8 mt-auto">
+                <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-center sm:text-left">
+                    <div>
+                        <p class="text-sm font-bold text-slate-900" x-text="settings.appName + ' ' + settings.appSubName"></p>
+                        <p class="text-xs text-slate-500 mt-0.5" x-text="settings.appLocation"></p>
+                    </div>
+                    <p class="text-xs text-slate-400">&copy; 2026 Portal Warga RT 04. All rights reserved.</p>
+                </div>
+            </footer>
+        </div>
+    </template>
+
+    <script>
+        function rtApp() {
+            return {
+                isLoggedIn: false,
+                activeTab: 'dashboard',
+                mobileMenuOpen: false,
+                wargaSubTab: 'tabel',
+                currentDate: new Date().toLocaleDateString('ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }),
+                verificationCode: 'VAL-2026-RT04-' + Math.floor(100000 + Math.random() * 900000),
+
+                tabs: [
+                    { id: 'dashboard', name: 'Dashboard', icon: 'fa-solid fa-chart-pie' },
+                    { id: 'warga', name: 'Data Warga', icon: 'fa-solid fa-users' },
+                    { id: 'surat', name: 'Surat', icon: 'fa-solid fa-file-lines' },
+                    { id: 'aspirasi', name: 'Aspirasi Warga', icon: 'fa-solid fa-bullhorn' },
+                    { id: 'keuangan', name: 'Kas RT', icon: 'fa-solid fa-wallet' },
+                    { id: 'agenda', name: 'Agenda', icon: 'fa-solid fa-calendar-days' },
+                    { id: 'rt04', name: 'Tentang RT 04', icon: 'fa-solid fa-house-user' },
+                    { id: 'pengaturan', name: 'Pengaturan', icon: 'fa-solid fa-gear' }
+                ],
+
+                settings: {
+                    appName: 'RT 04 / RW 12',
+                    appSubName: 'Perumahan Taman Buah Sukamantri',
+                    appLocation: 'Kecamatan Pasar Kemis, Kabupaten Tangerang, Banten',
+                    logoIcon: 'fa-solid fa-seedling',
+                    customLogoUrl: '',
+                    welcomeBgImg: 'https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=1200&q=80',
+                    suratNomorFormat: '04/RT-04/XII/2026',
+                    kwitansiFormat: 'KWT/RT04/2026/001',
+                    adminUser: 'hadi',
+                    adminPass: '160284',
+                    wargaUser: 'warga',
+                    wargaPass: 'warga123',
+                    menuBanners: {
+                        dashboard: 'https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=1200&q=80',
+                        warga: 'https://images.unsplash.com/photo-1573164713988-8665fc963095?auto=format&fit=crop&w=1200&q=80',
+                        surat: 'https://images.unsplash.com/photo-1450133064473-71024230f91b?auto=format&fit=crop&w=1200&q=80',
+                        aspirasi: 'https://images.unsplash.com/photo-1517486808906-6ca8b3f04846?auto=format&fit=crop&w=1200&q=80',
+                        keuangan: 'https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?auto=format&fit=crop&w=1200&q=80',
+                        agenda: 'https://images.unsplash.com/photo-1506784983877-45594efa4cbe?auto=format&fit=crop&w=1200&q=80',
+                        rt04: 'https://images.unsplash.com/photo-1513836279014-a89f7a76ae86?auto=format&fit=crop&w=1200&q=80',
+                        pengaturan: 'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?auto=format&fit=crop&w=1200&q=80'
+                    }
+                },
+
+                kontakInfo: {
+                    alamat: 'Jl. Taman Buah Raya Blok A No. 1, Perumahan Taman Buah Sukamantri',
+                    hotline: '0812-3456-7890',
+                    email: 'rt04tamanbuah@gmail.com',
+                    lokasiNama: 'Perumahan Taman Buah Sukamantri RT 04 / RW 12',
+                    lokasiDetail: 'Desa Sukamantri, Pasar Kemis, Tangerang',
+                    gmapsUrl: 'https://maps.google.com'
+                },
+
+                currentUser: null,
+                modalLoginOpen: false,
+                loginRole: 'pengurus',
+                loginUsername: '',
+                loginPassword: '',
+
+                residents: [
+                    { id: 1, rumah: 'Blok A1 No. 5', nik: '3275011002840001', nama: 'Idrus Sadi', hub: 'Kepala Keluarga', gender: 'Laki-Laki', agama: 'Islam', tempatLahir: 'Tangerang', tanggalLahir: '10 Februari 1980', usia: 46, pekerjaan: 'Karyawan Swasta', pendidikan: 'D3/S1', status: 'Tetap', listrik: '1300VA', internet: 'IndiHome', air: 'Sumur Bor', kendaraan: 'Motor & Mobil', platNomor: 'B 4567 XYZ' },
+                    { id: 2, rumah: 'Blok A1 No. 5', nik: '3275015005850002', nama: 'Siti Aminah', hub: 'Istri', gender: 'Perempuan', agama: 'Islam', tempatLahir: 'Serang', tanggalLahir: '15 Mei 1985', usia: 41, pekerjaan: 'Ibu Rumah Tangga', pendidikan: 'SMA', status: 'Tetap', listrik: '1300VA', internet: 'IndiHome', air: 'Sumur Bor', kendaraan: 'Motor & Mobil', platNomor: 'B 4567 XYZ' },
+                    { id: 3, rumah: 'Blok A1 No. 5', nik: '3275012008050003', nama: 'Rizki Idrus', hub: 'Anak 1', gender: 'Laki-Laki', agama: 'Islam', tempatLahir: 'Tangerang', tanggalLahir: '20 Agustus 2005', usia: 21, pekerjaan: 'Mahasiswa', pendidikan: 'SMA', status: 'Tetap', listrik: '1300VA', internet: 'IndiHome', air: 'Sumur Bor', kendaraan: 'Motor & Mobil', platNomor: 'B 4567 XYZ' },
+                    { id: 4, rumah: 'Blok A2 No. 12', nik: '3275011203900004', nama: 'Marsudi', hub: 'Kepala Keluarga', gender: 'Laki-Laki', agama: 'Islam', tempatLahir: 'Jakarta', tanggalLahir: '12 Maret 1990', usia: 36, pekerjaan: 'Wiraswasta', pendidikan: 'D3/S1', status: 'Tetap', listrik: '2200VA+', internet: 'FirstMedia', air: 'PAM / AETRA', kendaraan: 'Mobil 2+', platNomor: 'B 8910 ABC' },
+                    { id: 5, rumah: 'Blok A2 No. 12', nik: '3275015207920005', nama: 'Dewi Lestari', hub: 'Istri', gender: 'Perempuan', agama: 'Islam', tempatLahir: 'Bogor', tanggalLahir: '22 Juli 1992', usia: 34, pekerjaan: 'Karyawan Swasta', pendidikan: 'D3/S1', status: 'Tetap', listrik: '2200VA+', internet: 'FirstMedia', air: 'PAM / AETRA', kendaraan: 'Mobil 2+', platNomor: 'B 8910 ABC' },
+                    { id: 6, rumah: 'Blok B1 No. 8', nik: '3275011602840006', nama: 'Sofyan Hadi Prayitno', hub: 'Kepala Keluarga', gender: 'Laki-Laki', agama: 'Islam', tempatLahir: 'Tangerang', tanggalLahir: '16 Februari 1984', usia: 42, pekerjaan: 'PNS', pendidikan: 'S2/S3', status: 'Tetap', listrik: '1300VA', internet: 'IndiHome', air: 'Sumur Bor', kendaraan: 'Motor 1', platNomor: 'B 1234 HDP' },
+                    { id: 7, rumah: 'Blok B1 No. 8', nik: '3275014503880007', nama: 'Sri Mulyani', hub: 'Istri', gender: 'Perempuan', agama: 'Islam', tempatLahir: 'Tangerang', tanggalLahir: '5 Maret 1988', usia: 38, pekerjaan: 'Guru', pendidikan: 'D3/S1', status: 'Tetap', listrik: '1300VA', internet: 'IndiHome', air: 'Sumur Bor', kendaraan: 'Motor 1', platNomor: 'B 1234 HDP' }
+                ],
+
+                aspirations: [
+                    { id: 1, nama: 'Rizki Idrus', rumah: 'Blok A1 No. 5', kategori: 'Keamanan & Ketertiban', pesan: 'Mohon ditingkatkan patroli ronda malam di Blok A karena lampu penerangan jalan ada yang mati.', status: 'Proses', tanggal: '11 Oktober 2026' },
+                    { id: 2, nama: 'Dewi Lestari', rumah: 'Blok A2 No. 12', kategori: 'Kebersihan & Sampah', pesan: 'Jadwal pengangkutan sampah di area taman buah agar lebih rutin 3 kali seminggu.', status: 'Selesai', tanggal: '9 Oktober 2026' },
+                    { id: 3, nama: 'Sri Mulyani', rumah: 'Blok B1 No. 8', kategori: 'Infrastruktur & Jalan', pesan: 'Perbaikan paving block jalan utama yang bergelombang dekat pos satpam.', status: 'Proses', tanggal: '7 Oktober 2026' }
+                ],
+
+                transactions: [
+                    { id: 1, tanggal: '01 Okt 2026', jenis: 'Pemasukan', kategori: 'Iuran Warga', ket: 'Iuran Kas RT Warga Blok A & B Bulan Oktober', nominal: 3500000 },
+                    { id: 2, tanggal: '05 Okt 2026', jenis: 'Pengeluaran', kategori: 'Kebersihan', ket: 'Honor Petugas Kebersihan & Angkut Sampah RT', nominal: 1200000 },
+                    { id: 3, tanggal: '08 Okt 2026', jenis: 'Pengeluaran', kategori: 'Keamanan', ket: 'Pembelian Bola Lampu LED Jalan Umum RT 04', nominal: 250000 }
+                ],
+
+                agendas: [
+                    { id: 1, judul: 'Kerja Bakti Massal & Pembersihan Saluran Air', tanggal: 'Minggu, 18 Oktober 2026', waktu: '07:00 WIB - Selesai', lokasi: 'Fasum Taman Buah RT 04', status: 'Akan Datang' },
+                    { id: 2, judul: 'Rapat Bulanan Pengurus & Warga RT 04', tanggal: 'Sabtu, 24 Oktober 2026', waktu: '19:30 WIB - Selesai', lokasi: 'Balai Warga RT 04', status: 'Penting' },
+                    { id: 3, judul: 'Pos Ronda & Siskamling Malam Minggu', tanggal: 'Setiap Sabtu Malam', waktu: '22:00 WIB - Selesai', lokasi: 'Pos Satpam Utama Blok A', status: 'Rutin' }
+                ],
+
+                pengurusList: [
+                    { id: 1, nama: 'Idrus Sadi', jabatan: 'Ketua RT 04', tugas: 'Menkoordinasi seluruh kegiatan warga & memimpin musyawarah', icon: 'fa-solid fa-user-tie' },
+                    { id: 2, nama: 'Marsudi', jabatan: 'Wakil Ketua RT', tugas: 'Mengawasi bidang keamanan, ketertiban & siskamling', icon: 'fa-solid fa-user-shield' },
+                    { id: 3, nama: 'Sofyan Hadi Prayitno', jabatan: 'Sekretaris RT', tugas: 'Mengelola administrasi kependudukan, surat & keuangan', icon: 'fa-solid fa-file-pen' }
+                ],
+
+                // Search & Filter state
+                searchResident: '',
+                filterResidentStatus: 'ALL',
+                selectedSuratWargaId: '',
+                selectedAspirasiWargaId: '',
+
+                suratForm: {
+                    nama: '', nik: '', tempatLahir: '', tanggalLahir: '', gender: '', agama: '', usia: '', pekerjaan: '', rumah: '', jenis: 'Surat Keterangan Domisili', keperluan: ''
+                },
+
+                aspirasiForm: {
+                    nama: '', rumah: '', kategori: 'Keamanan & Ketertiban', pesan: ''
+                },
+
+                // Modals
+                modalViewResident: false,
+                currentResident: null,
+                modalViewKK: false,
+                currentKK: null,
+                familyMembers: [],
+                modalResidentForm: false,
+                isEditingResident: false,
+                residentForm: { id: null, rumah: '', nik: '', nama: '', hub: 'Kepala Keluarga', gender: 'Laki-Laki', agama: 'Islam', tempatLahir: '', tanggalLahir: '', usia: 35, pekerjaan: 'Karyawan Swasta', pendidikan: 'SMA', status: 'Tetap', listrik: '1300VA', internet: 'IndiHome', air: 'Sumur Bor', kendaraan: 'Motor 1', platNomor: 'B 1234 XYZ' },
+
+                modalPengurusForm: false,
+                isEditingPengurus: false,
+                pengurusForm: { id: null, nama: '', jabatan: '', tugas: '', icon: 'fa-solid fa-user' },
+
+                modalTransactionForm: false,
+                transactionForm: { jenis: 'Pemasukan', kategori: 'Iuran Warga', ket: '', nominal: 50000 },
+
+                modalAgendaForm: false,
+                agendaForm: { judul: '', tanggal: '', waktu: '', lokasi: '', status: 'Akan Datang' },
+
+                toastShow: false,
+                toastMessage: '',
+
+                showToast(msg) {
+                    this.toastMessage = msg;
+                    this.toastShow = true;
+                    setTimeout(() => { this.toastShow = false; }, 3000);
+                },
+
+                submitInitialLogin() {
+                    const u = this.loginUsername.trim();
+                    const p = this.loginPassword.trim();
+                    if (this.loginRole === 'pengurus') {
+                        if (u === this.settings.adminUser && p === this.settings.adminPass) {
+                            this.currentUser = { nama: 'Sofyan Hadi Prayitno', role: 'pengurus', jabatan: 'Sekretaris RT 04' };
+                            this.isLoggedIn = true;
+                            this.showToast('Selamat datang! Berhasil login sebagai Pengurus RT');
+                            setTimeout(() => { this.initCharts(); this.generateQRCode(); }, 200);
+                        } else {
+                            this.showToast('Username atau Password Pengurus salah!');
+                        }
+                    } else {
+                        if (u === this.settings.wargaUser && p === this.settings.wargaPass) {
+                            const r = this.residents[0];
+                            this.currentUser = { nama: r.nama, role: 'warga', nik: r.nik };
+                            this.isLoggedIn = true;
+                            this.showToast('Selamat datang! Berhasil login sebagai Warga');
+                            this.selectedSuratWargaId = r.id;
+                            this.autofillSuratForm();
+                            this.selectedAspirasiWargaId = r.id;
+                            this.autofillAspirasiForm();
+                            setTimeout(() => { this.initCharts(); this.generateQRCode(); }, 200);
+                        } else {
+                            this.showToast('Username atau Password Warga salah!');
+                        }
+                    }
+                },
+
+                openLoginModal() { this.loginUsername = ''; this.loginPassword = ''; this.modalLoginOpen = true; },
+                submitLogin() {
+                    const u = this.loginUsername.trim();
+                    const p = this.loginPassword.trim();
+                    if (this.loginRole === 'pengurus') {
+                        if (u === this.settings.adminUser && p === this.settings.adminPass) {
+                            this.currentUser = { nama: 'Sofyan Hadi Prayitno', role: 'pengurus', jabatan: 'Sekretaris RT 04' };
+                            this.showToast('Berhasil login sebagai Pengurus RT');
+                            this.modalLoginOpen = false;
+                        } else { this.showToast('Username/Password Pengurus salah!'); }
+                    } else {
+                        if (u === this.settings.wargaUser && p === this.settings.wargaPass) {
+                            const r = this.residents[0];
+                            this.currentUser = { nama: r.nama, role: 'warga', nik: r.nik };
+                            this.showToast('Berhasil login sebagai Warga');
+                            this.selectedSuratWargaId = r.id; this.autofillSuratForm();
+                            this.selectedAspirasiWargaId = r.id; this.autofillAspirasiForm();
+                            this.modalLoginOpen = false;
+                        } else { this.showToast('Username/Password Warga salah!'); }
+                    }
+                },
+
+                logout() { this.currentUser = null; this.isLoggedIn = false; this.showToast('Anda telah keluar.'); },
+                canManageData() { return this.currentUser && this.currentUser.role === 'pengurus'; },
+                formatIDR(val) { return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(val); },
+                printSection() { window.print(); },
+
+                printKKWithDynamicFilename() {
+                    if (!this.currentKK) { window.print(); return; }
+                    const now = new Date();
+                    const day = String(now.getDate()).padStart(2, '0');
+                    const monthNames = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
+                    const month = monthNames[now.getMonth()];
+                    const year = now.getFullYear();
+                    const cleanName = this.currentKK.nama.replace(/[^a-zA-Z0-9]/g, '_');
+                    const cleanHouse = this.currentKK.rumah.replace(/[^a-zA-Z0-9]/g, '_');
+                    const filename = 'KK_' + day + '_' + month + '_' + year + '_' + cleanName + '_' + cleanHouse + '.pdf';
+                    const originalTitle = document.title;
+                    document.title = filename;
+                    window.print();
+                    setTimeout(() => { document.title = originalTitle; }, 1000);
+                },
+
+                printAllKK() { window.print(); },
+
+                changeTab(tabId) {
+                    this.activeTab = tabId;
+                    if (tabId === 'dashboard') {
+                        setTimeout(() => { this.initCharts(); }, 150);
+                    }
+                    if (tabId === 'surat') {
+                        setTimeout(() => { this.generateQRCode(); }, 150);
+                    }
+                },
+
+                get stats() {
+                    const total = this.residents.length;
+                    const kk = this.uniqueHouses.length;
+                    const laki = this.residents.filter(r => r.gender === 'Laki-Laki').length;
+                    const perempuan = this.residents.filter(r => r.gender === 'Perempuan').length;
+                    return { total, kk, laki, perempuan };
+                },
+
+                get uniqueHouses() {
+                    const houses = this.residents.map(r => r.rumah);
+                    return [...new Set(houses)];
+                },
+
+                get filteredResidents() {
+                    let list = this.residents;
+                    if (this.filterResidentStatus !== 'ALL') {
+                        list = list.filter(r => r.status === this.filterResidentStatus);
+                    }
+                    if (this.searchResident.trim() !== '') {
+                        const q = this.searchResident.toLowerCase();
+                        list = list.filter(r => r.nama.toLowerCase().includes(q) || r.nik.includes(q) || r.rumah.toLowerCase().includes(q));
+                    }
+                    return list;
+                },
+
+                getHouseHead(house) {
+                    const members = this.residents.filter(r => r.rumah === house);
+                    return members.find(m => m.hub === 'Kepala Keluarga') || members[0] || {};
+                },
+
+                getResidentsByHouse(house) {
+                    const head = this.getHouseHead(house);
+                    return this.residents.filter(r => r.rumah === house && r.id !== head.id);
+                },
+
+                getHouseAttr(house, attr) {
+                    const head = this.getHouseHead(house);
+                    return head[attr] || '-';
+                },
+
+                getStatusBadgeClass(status) {
+                    if (status === 'Tetap') return 'bg-emerald-100 text-nature-800';
+                    if (status === 'Kontrak') return 'bg-blue-100 text-blue-800';
+                    if (status === 'Meninggal') return 'bg-slate-200 text-slate-700';
+                    return 'bg-amber-100 text-amber-800';
+                },
+
+                getAspirasiIcon(kat) {
+                    if (kat.includes('Keamanan')) return 'fa-solid fa-shield-halved';
+                    if (kat.includes('Kebersihan')) return 'fa-solid fa-broom';
+                    if (kat.includes('Infrastruktur')) return 'fa-solid fa-road';
+                    return 'fa-solid fa-lightbulb';
+                },
+
+                getAspirasiBadgeClass(kat) {
+                    if (kat.includes('Keamanan')) return 'bg-indigo-100 text-indigo-700';
+                    if (kat.includes('Kebersihan')) return 'bg-emerald-100 text-emerald-700';
+                    if (kat.includes('Infrastruktur')) return 'bg-amber-100 text-amber-700';
+                    return 'bg-blue-100 text-blue-700';
+                },
+
+                getAgendaCardClass(status) {
+                    if (status === 'Penting') return 'bg-rose-50/60 border-rose-200';
+                    if (status === 'Rutin') return 'bg-blue-50/60 border-blue-200';
+                    return 'bg-emerald-50/60 border-emerald-200';
+                },
+
+                getAgendaBadgeClass(status) {
+                    if (status === 'Penting') return 'bg-rose-100 text-rose-800';
+                    if (status === 'Rutin') return 'bg-blue-100 text-blue-800';
+                    return 'bg-emerald-100 text-emerald-800';
+                },
+
+                getAgendaIconClass(status) {
+                    if (status === 'Penting') return 'text-rose-600';
+                    if (status === 'Rutin') return 'text-blue-600';
+                    return 'text-emerald-600';
+                },
+
+                viewResident(r) {
+                    this.currentResident = r;
+                    this.modalViewResident = true;
+                },
+
+                viewKK(r) {
+                    this.currentKK = this.getHouseHead(r.rumah);
+                    this.familyMembers = this.getResidentsByHouse(r.rumah);
+                    this.modalViewKK = true;
+                    setTimeout(() => { this.generateQRCodeKK(); }, 150);
+                },
+
+                viewKKByHouse(house) {
+                    this.currentKK = this.getHouseHead(house);
+                    this.familyMembers = this.getResidentsByHouse(house);
+                    this.modalViewKK = true;
+                    setTimeout(() => { this.generateQRCodeKK(); }, 150);
+                },
+
+                openAddResidentModal() {
+                    this.isEditingResident = false;
+                    this.residentForm = {
+                        id: null, rumah: 'Blok A3 No. 1', nik: '327501' + Math.floor(1000000000 + Math.random() * 9000000000), nama: '', hub: 'Kepala Keluarga', gender: 'Laki-Laki', agama: 'Islam', tempatLahir: 'Tangerang', tanggalLahir: '1 Januari 1990', usia: 35, pekerjaan: 'Karyawan Swasta', pendidikan: 'SMA', status: 'Tetap', listrik: '1300VA', internet: 'IndiHome', air: 'Sumur Bor', kendaraan: 'Motor 1', platNomor: 'B 1234 XYZ'
+                    };
+                    this.modalResidentForm = true;
+                },
+
+                editResident(r) {
+                    this.isEditingResident = true;
+                    this.residentForm = { ...r };
+                    this.modalResidentForm = true;
+                },
+
+                onHouseInputChanged() {
+                    const house = this.residentForm.rumah.trim();
+                    const existingInHouse = this.residents.filter(r => r.rumah === house);
+                    if (existingInHouse.length === 0) {
+                        this.residentForm.hub = 'Kepala Keluarga';
+                    } else {
+                        const hasHead = existingInHouse.some(r => r.hub === 'Kepala Keluarga');
+                        if (!hasHead) {
+                            this.residentForm.hub = 'Kepala Keluarga';
+                        } else {
+                            const countMembers = existingInHouse.length;
+                            if (countMembers === 1) this.residentForm.hub = 'Istri';
+                            else if (countMembers === 2) this.residentForm.hub = 'Anak 1';
+                            else if (countMembers === 3) this.residentForm.hub = 'Anak 2';
+                            else if (countMembers === 4) this.residentForm.hub = 'Anak 3';
+                            else if (countMembers === 5) this.residentForm.hub = 'Anak 4';
+                            else if (countMembers === 6) this.residentForm.hub = 'Anak 5';
+                            else this.residentForm.hub = 'Anak 6';
+                        }
+                    }
+                },
+
+                saveResident() {
+                    if (this.isEditingResident) {
+                        const idx = this.residents.findIndex(r => r.id === this.residentForm.id);
+                        if (idx !== -1) {
+                            this.residents[idx] = { ...this.residentForm };
+                        }
+                        this.showToast('Data warga berhasil diperbarui & disinkronkan!');
+                    } else {
+                        const newId = this.residents.length > 0 ? Math.max(...this.residents.map(r => r.id)) + 1 : 1;
+                        this.residents.push({ ...this.residentForm, id: newId });
+                        this.showToast('Warga baru berhasil ditambahkan & disinkronkan ke KK!');
+                    }
+                    this.modalResidentForm = false;
+                    if (this.activeTab === 'dashboard') {
+                        setTimeout(() => { this.initCharts(); }, 150);
+                    }
+                },
+
+                deleteResident(id) {
+                    if (confirm('Apakah Anda yakin ingin menghapus data warga ini? Data KK & statistik akan otomatis tersinkronisasi.')) {
+                        this.residents = this.residents.filter(r => r.id !== id);
+                        this.showToast('Data warga berhasil dihapus.');
+                        if (this.activeTab === 'dashboard') {
+                            setTimeout(() => { this.initCharts(); }, 150);
+                        }
+                    }
+                },
+
+                autofillSuratForm() {
+                    const r = this.residents.find(item => item.id == this.selectedSuratWargaId);
+                    if (r) {
+                        this.suratForm.nama = r.nama;
+                        this.suratForm.nik = r.nik;
+                        this.suratForm.tempatLahir = r.tempatLahir;
+                        this.suratForm.tanggalLahir = r.tanggalLahir;
+                        this.suratForm.gender = r.gender;
+                        this.suratForm.agama = r.agama;
+                        this.suratForm.usia = r.usia;
+                        this.suratForm.pekerjaan = r.pekerjaan;
+                        this.suratForm.rumah = r.rumah;
+                    }
+                },
+
+                submitSuratForm() {
+                    this.showToast('Surat pengantar berhasil digenerate dengan QR Code validasi!');
+                    setTimeout(() => { this.generateQRCode(); }, 100);
+                },
+
+                printGeneratedLetter() {
+                    window.print();
+                },
+
+                autofillAspirasiForm() {
+                    const r = this.residents.find(item => item.id == this.selectedAspirasiWargaId);
+                    if (r) {
+                        this.aspirasiForm.nama = r.nama;
+                        this.aspirasiForm.rumah = r.rumah;
+                    }
+                },
+
+                submitAspirasiForm() {
+                    const newId = this.aspirations.length > 0 ? Math.max(...this.aspirations.map(a => a.id)) + 1 : 1;
+                    const now = new Date();
+                    const dateStr = now.toLocaleDateString('ID', { day: 'numeric', month: 'long', year: 'numeric' });
+                    this.aspirations.unshift({
+                        id: newId,
+                        nama: this.aspirasiForm.nama,
+                        rumah: this.aspirasiForm.rumah,
+                        kategori: this.aspirasiForm.kategori,
+                        pesan: this.aspirasiForm.pesan,
+                        status: 'Proses',
+                        tanggal: dateStr
+                    });
+                    this.showToast('Aspirasi & pengaduan berhasil dikirim ke pengurus RT!');
+                    this.aspirasiForm.pesan = '';
+                },
+
+                openAddTransactionModal() {
+                    this.transactionForm = { jenis: 'Pemasukan', kategori: 'Iuran Warga', ket: '', nominal: 50000 };
+                    this.modalTransactionForm = true;
+                },
+
+                saveTransaction() {
+                    const newId = this.transactions.length > 0 ? Math.max(...this.transactions.map(t => t.id)) + 1 : 1;
+                    const now = new Date();
+                    const dateStr = now.toLocaleDateString('ID', { day: '2-digit', month: 'short', year: 'numeric' });
+                    this.transactions.unshift({
+                        id: newId,
+                        tanggal: dateStr,
+                        jenis: this.transactionForm.jenis,
+                        kategori: this.transactionForm.kategori,
+                        ket: this.transactionForm.ket,
+                        nominal: Number(this.transactionForm.nominal)
+                    });
+                    this.showToast('Transaksi kas baru berhasil dicatat!');
+                    this.modalTransactionForm = false;
+                },
+
+                get totalKasIncome() {
+                    return this.transactions.filter(t => t.jenis === 'Pemasukan').reduce((acc, t) => acc + t.nominal, 0);
+                },
+                get totalKasExpense() {
+                    return this.transactions.filter(t => t.jenis === 'Pengeluaran').reduce((acc, t) => acc + t.nominal, 0);
+                },
+                get totalKasBalance() {
+                    return this.totalKasIncome - this.totalKasExpense;
+                },
+
+                openAddAgendaModal() {
+                    this.agendaForm = { judul: '', tanggal: '', waktu: '', lokasi: '', status: 'Akan Datang' };
+                    this.modalAgendaForm = true;
+                },
+
+                saveAgenda() {
+                    const newId = this.agendas.length > 0 ? Math.max(...this.agendas.map(a => a.id)) + 1 : 1;
+                    this.agendas.push({ id: newId, ...this.agendaForm });
+                    this.showToast('Agenda baru berhasil ditambahkan!');
+                    this.modalAgendaForm = false;
+                },
+
+                openAddPengurusModal() {
+                    this.isEditingPengurus = false;
+                    this.pengurusForm = { id: null, nama: '', jabatan: '', tugas: '', icon: 'fa-solid fa-user' };
+                    this.modalPengurusForm = true;
+                },
+
+                editPengurus(p) {
+                    this.isEditingPengurus = true;
+                    this.pengurusForm = { ...p };
+                    this.modalPengurusForm = true;
+                },
+
+                savePengurus() {
+                    if (this.isEditingPengurus) {
+                        const idx = this.pengurusList.findIndex(item => item.id === this.pengurusForm.id);
+                        if (idx !== -1) this.pengurusList[idx] = { ...this.pengurusForm };
+                        this.showToast('Data pengurus diperbarui!');
+                    } else {
+                        const newId = this.pengurusList.length > 0 ? Math.max(...this.pengurusList.map(p => p.id)) + 1 : 1;
+                        this.pengurusList.push({ ...this.pengurusForm, id: newId });
+                        this.showToast('Pengurus baru ditambahkan!');
+                    }
+                    this.modalPengurusForm = false;
+                },
+
+                deletePengurus(id) {
+                    if (confirm('Hapus pengurus ini?')) {
+                        this.pengurusList = this.pengurusList.filter(p => p.id !== id);
+                        this.showToast('Pengurus dihapus.');
+                    }
+                },
+
+                handleLogoUpload(e) {
+                    const file = e.target.files[0];
+                    if (file) {
+                        const reader = new FileReader();
+                        reader.onload = (evt) => {
+                            this.settings.customLogoUrl = evt.target.result;
+                            this.showToast('Logo RT berhasil diupload!');
+                        };
+                        reader.readAsDataURL(file);
+                    }
+                },
+
+                handleWelcomeBgUpload(e) {
+                    const file = e.target.files[0];
+                    if (file) {
+                        const reader = new FileReader();
+                        reader.onload = (evt) => {
+                            this.settings.welcomeBgImg = evt.target.result;
+                            this.showToast('Banner welcome berhasil diupload!');
+                        };
+                        reader.readAsDataURL(file);
+                    }
+                },
+
+                handleMenuBannerUpload(key, e) {
+                    const file = e.target.files[0];
+                    if (file) {
+                        const reader = new FileReader();
+                        reader.onload = (evt) => {
+                            this.settings.menuBanners[key] = evt.target.result;
+                            this.showToast('Banner ' + key + ' berhasil diupload!');
+                        };
+                        reader.readAsDataURL(file);
+                    }
+                },
+
+                saveSystemSettings() {
+                    this.showToast('Pengaturan sistem & otoritas kredensial login berhasil disimpan!');
+                },
+
+                backupSystemData() {
+                    const dataObj = {
+                        settings: this.settings,
+                        residents: this.residents,
+                        aspirations: this.aspirations,
+                        transactions: this.transactions,
+                        agendas: this.agendas,
+                        pengurusList: this.pengurusList
+                    };
+                    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(dataObj, null, 2));
+                    const dlAnchor = document.createElement('a');
+                    dlAnchor.setAttribute("href", dataStr);
+                    dlAnchor.setAttribute("download", "backup_rt04_sukamantri_2026.json");
+                    document.body.appendChild(dlAnchor);
+                    dlAnchor.click();
+                    dlAnchor.remove();
+                    this.showToast('Backup data sistem (JSON) berhasil didownload!');
+                },
+
+                resetSystemData() {
+                    if (confirm('PERINGATAN: Reset sistem akan mengembalikan seluruh data ke factory default. Lanjutkan?')) {
+                        localStorage.clear();
+                        window.location.reload();
+                    }
+                },
+
+                getHouseAgeStats(house) {
+                    const mems = this.residents.filter(r => r.rumah === house);
+                    const avg = mems.length ? Math.round(mems.reduce((a, b) => a + Number(b.usia), 0) / mems.length) : 0;
+                    return avg + ' Thn (Rata-rata)';
+                },
+                getHouseEduStats(house) {
+                    const head = this.getHouseHead(house);
+                    return head.pendidikan || 'SMA';
+                },
+                getHouseJobStats(house) {
+                    const head = this.getHouseHead(house);
+                    return head.pekerjaan || 'Wiraswasta';
+                },
+                getHouseRelStats(house) {
+                    const head = this.getHouseHead(house);
+                    return head.agama || 'Islam';
+                },
+
+                generateQRCode() {
+                    setTimeout(() => {
+                        const el = document.getElementById('qrcode-container');
+                        if (el) {
+                            el.innerHTML = '';
+                            try {
+                                new QRCode(el, {
+                                    text: "VALIDASI-RT04-SUKAMANTRI:" + this.verificationCode + "-" + (this.suratForm.nik || '327501'),
+                                    width: 64,
+                                    height: 64,
+                                    colorDark: "#14532d",
+                                    colorLight: "#ffffff",
+                                    correctLevel: QRCode.CorrectLevel.H
+                                });
+                            } catch(err) {}
+                        }
+                    }, 100);
+                },
+
+                generateQRCodeKK() {
+                    setTimeout(() => {
+                        const el = document.getElementById('qrcode-kk-container');
+                        if (el) {
+                            el.innerHTML = '';
+                            try {
+                                new QRCode(el, {
+                                    text: "VALIDASI-KK-RT04:" + this.verificationCode + "-" + (this.currentKK ? this.currentKK.nik : '327501'),
+                                    width: 48,
+                                    height: 48,
+                                    colorDark: "#14532d",
+                                    colorLight: "#ffffff",
+                                    correctLevel: QRCode.CorrectLevel.H
+                                });
+                            } catch(err) {}
+                        }
+                    }, 100);
+                },
+
+                initCharts() {
+                    if (typeof Chart === 'undefined') return;
+
+                    // 1. Usia Group
+                    const elUsia = document.getElementById('chartUsiaGroup');
+                    if (elUsia) {
+                        if (window.myChartUsia) window.myChartUsia.destroy();
+                        const balita = this.residents.filter(r => r.usia <= 5).length;
+                        const anak = this.residents.filter(r => r.usia > 5 && r.usia <= 17).length;
+                        const dewasa = this.residents.filter(r => r.usia > 17 && r.usia <= 55).length;
+                        const lansia = this.residents.filter(r => r.usia > 55).length;
+
+                        window.myChartUsia = new Chart(elUsia, {
+                            type: 'doughnut',
+                            data: {
+                                labels: ['Balita (0-5)', 'Anak (6-17)', 'Dewasa (18-55)', 'Lansia (>55)'],
+                                datasets: [{ data: [balita, anak, dewasa, lansia], backgroundColor: ['#34d399', '#60a5fa', '#f59e0b', '#ec4899'] }]
+                            },
+                            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 10 } } } } }
+                        });
+                    }
+
+                    // 2. Pendidikan
+                    const elEdu = document.getElementById('chartPendidikan');
+                    if (elEdu) {
+                        if (window.myChartEdu) window.myChartEdu.destroy();
+                        const sd = this.residents.filter(r => r.pendidikan === 'SD').length;
+                        const smp = this.residents.filter(r => r.pendidikan === 'SMP').length;
+                        const sma = this.residents.filter(r => r.pendidikan === 'SMA').length;
+                        const d3s1 = this.residents.filter(r => r.pendidikan === 'D3/S1').length;
+                        const s2s3 = this.residents.filter(r => r.pendidikan === 'S2/S3').length;
+
+                        window.myChartEdu = new Chart(elEdu, {
+                            type: 'bar',
+                            data: {
+                                labels: ['SD', 'SMP', 'SMA', 'D3/S1', 'S2/S3'],
+                                datasets: [{ label: 'Jumlah', data: [sd, smp, sma, d3s1, s2s3], backgroundColor: '#15803d', borderRadius: 8 }]
+                            },
+                            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { ticks: { precision: 0 } } } }
+                        });
+                    }
+
+                    // 3. Pekerjaan
+                    const elJob = document.getElementById('chartPekerjaan');
+                    if (elJob) {
+                        if (window.myChartJob) window.myChartJob.destroy();
+                        const pns = this.residents.filter(r => r.pekerjaan.toLowerCase().includes('pns')).length;
+                        const swasta = this.residents.filter(r => r.pekerjaan.toLowerCase().includes('swasta')).length;
+                        const wira = this.residents.filter(r => r.pekerjaan.toLowerCase().includes('wira')).length;
+                        const lainnya = this.residents.length - (pns + swasta + wira);
+
+                        window.myChartJob = new Chart(elJob, {
+                            type: 'pie',
+                            data: {
+                                labels: ['PNS', 'Karyawan Swasta', 'Wiraswasta', 'Lainnya / Pelajar'],
+                                datasets: [{ data: [pns, swasta, wira, lainnya], backgroundColor: ['#3b82f6', '#10b981', '#f97316', '#8b5cf6'] }]
+                            },
+                            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 10 } } } } }
+                        });
+                    }
+
+                    // 4. Status Tinggal
+                    const elStatus = document.getElementById('chartStatusTinggal');
+                    if (elStatus) {
+                        if (window.myChartStatus) window.myChartStatus.destroy();
+                        const tetap = this.residents.filter(r => r.status === 'Tetap').length;
+                        const kontrak = this.residents.filter(r => r.status === 'Kontrak').length;
+                        window.myChartStatus = new Chart(elStatus, {
+                            type: 'doughnut',
+                            data: {
+                                labels: ['Warga Tetap', 'Warga Kontrak'],
+                                datasets: [{ data: [tetap, kontrak], backgroundColor: ['#059669', '#38bdf8'] }]
+                            },
+                            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 10 } } } } }
+                        });
+                    }
+
+                    // 5. Agama
+                    const elAgama = document.getElementById('chartAgama');
+                    if (elAgama) {
+                        if (window.myChartAgama) window.myChartAgama.destroy();
+                        const islam = this.residents.filter(r => r.agama === 'Islam').length;
+                        const kristen = this.residents.filter(r => r.agama === 'Kristen' || r.agama === 'Katholik').length;
+                        const lainnya = this.residents.length - (islam + kristen);
+                        window.myChartAgama = new Chart(elAgama, {
+                            type: 'pie',
+                            data: {
+                                labels: ['Islam', 'Kristen / Katholik', 'Lainnya'],
+                                datasets: [{ data: [islam, kristen, lainnya], backgroundColor: ['#047857', '#fbbf24', '#a855f7'] }]
+                            },
+                            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 10 } } } } }
+                        });
+                    }
+
+                    // 6. Kendaraan
+                    const elKend = document.getElementById('chartKendaraan');
+                    if (elKend) {
+                        if (window.myChartKend) window.myChartKend.destroy();
+                        const motor = this.residents.filter(r => r.kendaraan.toLowerCase().includes('motor')).length;
+                        const mobil = this.residents.filter(r => r.kendaraan.toLowerCase().includes('mobil')).length;
+                        window.myChartKend = new Chart(elKend, {
+                            type: 'bar',
+                            data: {
+                                labels: ['Motor Pemilik', 'Mobil Pemilik'],
+                                datasets: [{ label: 'Jumlah KK', data: [motor, mobil], backgroundColor: '#d97706', borderRadius: 8 }]
+                            },
+                            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { ticks: { precision: 0 } } } }
+                        });
+                    }
+
+                    // 7. Listrik
+                    const elListrik = document.getElementById('chartListrik');
+                    if (elListrik) {
+                        if (window.myChartListrik) window.myChartListrik.destroy();
+                        const v450 = this.residents.filter(r => r.listrik === '450VA').length;
+                        const v900 = this.residents.filter(r => r.listrik === '900VA').length;
+                        const v1300 = this.residents.filter(r => r.listrik === '1300VA').length;
+                        const v2200 = this.residents.filter(r => r.listrik === '2200VA+').length;
+                        window.myChartListrik = new Chart(elListrik, {
+                            type: 'doughnut',
+                            data: {
+                                labels: ['450VA', '900VA', '1300VA', '2200VA+'],
+                                datasets: [{ data: [v450, v900, v1300, v2200], backgroundColor: ['#f87171', '#fb923c', '#4ade80', '#60a5fa'] }]
+                            },
+                            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 10 } } } } }
+                        });
+                    }
+
+                    // 8. Internet
+                    const elNet = document.getElementById('chartInternet');
+                    if (elNet) {
+                        if (window.myChartNet) window.myChartNet.destroy();
+                        const indihome = this.residents.filter(r => r.internet === 'IndiHome').length;
+                        const firstmedia = this.residents.filter(r => r.internet === 'FirstMedia').length;
+                        const lainnya = this.residents.length - (indihome + firstmedia);
+                        window.myChartNet = new Chart(elNet, {
+                            type: 'pie',
+                            data: {
+                                labels: ['IndiHome', 'FirstMedia', 'Lainnya / Seluler'],
+                                datasets: [{ data: [indihome, firstmedia, lainnya], backgroundColor: ['#ec4899', '#8b5cf6', '#06b6d4'] }]
+                            },
+                            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 10 } } } } }
+                        });
+                    }
+
+                    // 9. Air
+                    const elAir = document.getElementById('chartAir');
+                    if (elAir) {
+                        if (window.myChartAir) window.myChartAir.destroy();
+                        const pam = this.residents.filter(r => r.air.toLowerCase().includes('pam')).length;
+                        const sumur = this.residents.filter(r => r.air.toLowerCase().includes('sumur')).length;
+                        window.myChartAir = new Chart(elAir, {
+                            type: 'bar',
+                            data: {
+                                labels: ['PAM / AETRA', 'Sumur Bor'],
+                                datasets: [{ label: 'Jumlah', data: [pam, sumur], backgroundColor: '#0284c7', borderRadius: 8 }]
+                            },
+                            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { ticks: { precision: 0 } } } }
+                        });
+                    }
+                }
+            }
+        }
+    </script>
+</body>
+</html>
